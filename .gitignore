@@ -1,0 +1,27 @@
+node_modules/
+dist/
+build/
+
+# env
+.env
+.env.local
+.env.*.local
+
+# server runtime data
+server/storage/**
+!server/storage/.gitkeep
+
+# logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# test/coverage
+coverage/
+
+# editor
+.vscode/
+.idea/

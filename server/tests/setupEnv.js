@@ -1,0 +1,9 @@
+process.env.NODE_ENV = 'test';
+process.env.PORT = process.env.PORT || '5000';
+process.env.CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
+process.env.MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/interview_prep_test';
+process.env.REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+process.env.JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'test_access_secret_test_access_secret';
+process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test_refresh_secret_test_refresh_secret';
+process.env.GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'test_gemini_api_key';
+process.env.STORAGE_ROOT = process.env.STORAGE_ROOT || 'storage';
