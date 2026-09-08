@@ -4,6 +4,7 @@ import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import * as aiInteractionLogRepository from '../repositories/aiInteractionLogRepository.js';
 import { PROMPT_VERSION as PROFILE_SUMMARY_VERSION, buildProfileSummaryPrompt } from '../prompts/profileSummary/v1.js';
+import { PROMPT_VERSION as CONTENT_DRAFT_VERSION, buildContentDraftPrompt } from '../prompts/contentDraft/v1.js';
 
 const profileSummaryResponseSchema = z.object({
   summary: z.string().min(1),
@@ -69,6 +70,57 @@ export async function summarizeProfile({ userId, onboardingAnswers }) {
       model: 'rule-based-fallback',
       generatedAt: new Date(),
     }),
+  });
+}
+
+const quizDraftResponseSchema = z.object({
+  questions: z.array(
+    z.object({
+      questionText: z.string().min(1),
+      type: z.enum(['mcq', 'short_answer']),
+      options: z.array(z.string()).optional(),
+      correctAnswerIndex: z.number().optional(),
+      correctAnswerText: z.string().optional(),
+      points: z.number().default(1),
+    }),
+  ),
+});
+const materialDraftResponseSchema = z.object({ contentBody: z.string().min(1) });
+const groomingDraftResponseSchema = z.object({ body: z.string().min(1) });
+
+function contentDraftSchemaFor(contentType) {
+  if (contentType === 'quiz') return quizDraftResponseSchema;
+  if (contentType === 'material') return materialDraftResponseSchema;
+  return groomingDraftResponseSchema;
+}
+
+function contentDraftFallback(contentType) {
+  const notice = '(AI draft unavailable — please write this content manually.)';
+  if (contentType === 'quiz') return { questions: [] };
+  if (contentType === 'material') return { contentBody: notice };
+  return { body: notice };
+}
+
+/**
+ * Drafts admin-authored content (quiz questions / material body / grooming
+ * tip text) for review — never auto-published. Falls back to an explicit
+ * "unavailable" placeholder (rather than throwing) on any Gemini failure.
+ */
+export async function generateContentDraft({ userId, contentType, topic, count }) {
+  return withLogging({
+    userId,
+    operation: 'content_draft',
+    promptVersion: CONTENT_DRAFT_VERSION,
+    fn: async () => {
+      const prompt = buildContentDraftPrompt({ contentType, topic, count });
+      const raw = await generateContent(prompt);
+      const parsed = contentDraftSchemaFor(contentType).safeParse(JSON.parse(extractJson(raw)));
+      if (!parsed.success) {
+        throw new Error(`Malformed Gemini response: ${parsed.error.message}`);
+      }
+      return parsed.data;
+    },
+    fallback: () => contentDraftFallback(contentType),
   });
 }
 

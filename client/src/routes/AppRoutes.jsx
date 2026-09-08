@@ -5,8 +5,13 @@ import LoginPage from '../features/auth/LoginPage.jsx';
 import RegisterPage from '../features/auth/RegisterPage.jsx';
 import OnboardingWizard from '../features/onboarding/OnboardingWizard.jsx';
 import ProfilePage from '../features/profile/ProfilePage.jsx';
+import TrainingCatalogPage from '../features/trainings/TrainingCatalogPage.jsx';
+import TrainingDetailPage from '../features/trainings/TrainingDetailPage.jsx';
+import AdminDashboardPage from '../features/admin/AdminDashboardPage.jsx';
+import ProgramManagePage from '../features/admin/ProgramManagePage.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import RequireOnboarding from './RequireOnboarding.jsx';
+import RoleRoute from './RoleRoute.jsx';
 
 export default function AppRoutes() {
   return (
@@ -19,8 +24,16 @@ export default function AppRoutes() {
         <Route element={<ProtectedRoute />}>
           <Route path="/onboarding" element={<OnboardingWizard />} />
 
+          {/* Admin accounts skip the student onboarding gate entirely. */}
+          <Route element={<RoleRoute allow={['admin']} />}>
+            <Route path="/admin" element={<AdminDashboardPage />} />
+            <Route path="/admin/trainings/:programId" element={<ProgramManagePage />} />
+          </Route>
+
           <Route element={<RequireOnboarding />}>
             <Route path="/dashboard" element={<ProfilePage />} />
+            <Route path="/trainings" element={<TrainingCatalogPage />} />
+            <Route path="/trainings/:programId" element={<TrainingDetailPage />} />
           </Route>
         </Route>
       </Route>
