@@ -2,9 +2,9 @@ import { useSelector } from 'react-redux';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { selectAuthStatus } from '../features/auth/authSlice.js';
 
-// Phase 1 should add an app-boot session check (GET /auth/me) that sets
-// status to 'authenticated'/'unauthenticated' before routes render, so 'idle'
-// here doesn't flash a redirect on a page refresh with a still-valid session.
+// AuthBootstrap (app/AuthBootstrap.jsx) resolves 'idle' to either
+// 'authenticated' or 'unauthenticated' before any route renders, so this
+// guard never sees a lingering 'idle' state in practice.
 export default function ProtectedRoute() {
   const status = useSelector(selectAuthStatus);
   const location = useLocation();

@@ -4,10 +4,12 @@
 // phase introduces them (Phase 1+: profile-summarize, interview-*, resume, tips).
 import { logger } from '../utils/logger.js';
 import { connectDb } from '../config/db.js';
+import { startProfileSummarizeWorker } from './workers/profileSummarizeWorker.js';
 
 async function main() {
   await connectDb();
-  logger.info('Worker process started (no workers registered yet)');
+  startProfileSummarizeWorker();
+  logger.info('Worker process started: ai-profile');
 }
 
 main().catch((err) => {

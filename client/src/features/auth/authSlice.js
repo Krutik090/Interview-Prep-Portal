@@ -20,10 +20,15 @@ const authSlice = createSlice({
       state.accessToken = null;
       state.status = 'unauthenticated';
     },
+    userPatched(state, action) {
+      if (state.user) {
+        Object.assign(state.user, action.payload);
+      }
+    },
   },
 });
 
-export const { credentialsSet, loggedOut } = authSlice.actions;
+export const { credentialsSet, loggedOut, userPatched } = authSlice.actions;
 export default authSlice.reducer;
 
 export const selectCurrentUser = (state) => state.auth.user;

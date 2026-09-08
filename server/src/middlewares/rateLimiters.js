@@ -23,10 +23,14 @@ export const globalRateLimiter = rateLimit({
 });
 
 // Stricter limiter for auth endpoints (login/register/refresh) to blunt
-// credential stuffing / brute force.
+// credential stuffing / brute force. The limit is relaxed in test env so
+// functional test suites (which legitimately issue many sequential
+// register/login/refresh calls from the same IP) don't cross-contaminate —
+// the limiter's own behavior is exercised by a dedicated rate-limit test
+// instead of the functional auth/onboarding/profile suites.
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 10,
+  limit: env.isTest ? 1000 : 10,
   standardHeaders: true,
   legacyHeaders: false,
   store: redisStore('rl:auth:'),

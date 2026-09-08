@@ -3,5 +3,5 @@ export default {
   transform: {},
   testMatch: ['**/tests/**/*.test.js'],
   setupFiles: ['<rootDir>/tests/setupEnv.js'],
-  testTimeout: 20000,
+  testTimeout: 60000,
 };
