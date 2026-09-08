@@ -7,7 +7,7 @@ export const create = asyncHandler(async (req, res) => {
 });
 
 export const getById = asyncHandler(async (req, res) => {
-  const program = await trainingService.getById(req.params.programId);
+  const program = await trainingService.getById(req.params.programId, { role: req.user.role });
   res.status(200).json({ program });
 });
 

@@ -24,9 +24,15 @@ export async function create(adminId, data) {
   return program;
 }
 
-export async function getById(id) {
+export async function getById(id, { role } = {}) {
   const program = await trainingProgramRepository.findById(id);
   if (!program) throw ApiError.notFound('Training program not found');
+  if (role !== 'admin' && program.status !== 'published') {
+    // Mirrors moduleService.getByIdForRole: a student must not be able to
+    // fetch a draft/archived program's details by guessing/enumerating its
+    // id, even though the list endpoint already filters it out.
+    throw ApiError.notFound('Training program not found');
+  }
   return program;
 }
 
@@ -80,7 +86,9 @@ export async function listPublishedForStudents({ roundType, page = 1, limit = 20
 }
 
 export async function reorderModules(programId, moduleOrder) {
-  const program = await getById(programId);
+  // Admin-only route (enforced at the route level) — a draft program must
+  // still be reorderable by the admin who owns it.
+  const program = await getById(programId, { role: 'admin' });
   const currentIds = program.moduleOrder.map((id) => String(id));
   const sameSet =
     currentIds.length === moduleOrder.length &&

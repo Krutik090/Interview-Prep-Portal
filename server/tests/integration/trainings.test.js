@@ -81,6 +81,26 @@ describe('Training programs (admin CRUD, student catalog)', () => {
     expect(afterPublish.body.programs).toHaveLength(1);
   });
 
+  it('forbids a student from fetching a draft program directly by id (IDOR check)', async () => {
+    const adminToken = await makeAdmin();
+    const created = await request(app)
+      .post('/api/v1/trainings')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send(programPayload);
+    expect(created.body.program.status).toBe('draft');
+
+    const studentToken = await makeStudent();
+    const asStudent = await request(app)
+      .get(`/api/v1/trainings/${created.body.program._id}`)
+      .set('Authorization', `Bearer ${studentToken}`);
+    expect(asStudent.status).toBe(404);
+
+    const asAdmin = await request(app)
+      .get(`/api/v1/trainings/${created.body.program._id}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(asAdmin.status).toBe(200);
+  });
+
   it('creates all four module types under a program and lists them in order', async () => {
     const adminToken = await makeAdmin();
     const program = (
