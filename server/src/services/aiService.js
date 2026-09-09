@@ -5,6 +5,18 @@ import { logger } from '../utils/logger.js';
 import * as aiInteractionLogRepository from '../repositories/aiInteractionLogRepository.js';
 import { PROMPT_VERSION as PROFILE_SUMMARY_VERSION, buildProfileSummaryPrompt } from '../prompts/profileSummary/v1.js';
 import { PROMPT_VERSION as CONTENT_DRAFT_VERSION, buildContentDraftPrompt } from '../prompts/contentDraft/v1.js';
+import {
+  PROMPT_VERSION as INTERVIEW_QUESTION_GEN_VERSION,
+  buildInterviewQuestionGenPrompt,
+} from '../prompts/interviewQuestionGen/v1.js';
+import {
+  PROMPT_VERSION as INTERVIEW_EVALUATION_VERSION,
+  buildInterviewEvaluationPrompt,
+} from '../prompts/interviewEvaluation/v1.js';
+import {
+  PROMPT_VERSION as GD_REVIEW_ASSIST_VERSION,
+  buildGdReviewAssistPrompt,
+} from '../prompts/gdReviewAssist/v1.js';
 
 const profileSummaryResponseSchema = z.object({
   summary: z.string().min(1),
@@ -121,6 +133,102 @@ export async function generateContentDraft({ userId, contentType, topic, count }
       return parsed.data;
     },
     fallback: () => contentDraftFallback(contentType),
+  });
+}
+
+const interviewQuestionsResponseSchema = z.object({ questions: z.array(z.string().min(1)).min(1) });
+
+/**
+ * Generates fresh interview questions for one attempt. Deliberately never
+ * cached (unlike catalog listings) — questions must be fresh per attempt to
+ * prevent answer-sharing between students. Falls back to a small fixed
+ * question bank so a Gemini outage never blocks starting an attempt.
+ */
+export async function generateMockInterviewQuestions({ userId, roundType, focusArea, difficulty, numQuestions }) {
+  return withLogging({
+    userId,
+    operation: 'interview_question_gen',
+    promptVersion: INTERVIEW_QUESTION_GEN_VERSION,
+    fn: async () => {
+      const prompt = buildInterviewQuestionGenPrompt({ roundType, focusArea, difficulty, numQuestions });
+      const raw = await generateContent(prompt);
+      const parsed = interviewQuestionsResponseSchema.safeParse(JSON.parse(extractJson(raw)));
+      if (!parsed.success) {
+        throw new Error(`Malformed Gemini response: ${parsed.error.message}`);
+      }
+      return parsed.data.questions;
+    },
+    fallback: () =>
+      Array.from(
+        { length: numQuestions },
+        (_, i) => `Tell me about a time you handled a challenging ${roundType} situation. (fallback question ${i + 1})`,
+      ),
+  });
+}
+
+const interviewEvaluationResponseSchema = z.object({
+  verdict: z.enum(['pass', 'fail']),
+  score: z.number().min(0).max(100),
+  feedback: z.string().min(1),
+});
+
+/**
+ * Evaluates one free-text interview answer. Falls back to a neutral
+ * "manual review required" verdict (rather than silently passing or
+ * failing the student) if Gemini is unavailable.
+ */
+export async function evaluateInterviewAnswer({ userId, roundType, question, answerText }) {
+  return withLogging({
+    userId,
+    operation: 'interview_evaluate',
+    promptVersion: INTERVIEW_EVALUATION_VERSION,
+    fn: async () => {
+      const prompt = buildInterviewEvaluationPrompt({ roundType, question, answerText });
+      const raw = await generateContent(prompt);
+      const parsed = interviewEvaluationResponseSchema.safeParse(JSON.parse(extractJson(raw)));
+      if (!parsed.success) {
+        throw new Error(`Malformed Gemini response: ${parsed.error.message}`);
+      }
+      return { ...parsed.data, promptVersion: INTERVIEW_EVALUATION_VERSION, evaluatedAt: new Date() };
+    },
+    fallback: () => ({
+      verdict: 'fail',
+      score: 0,
+      feedback: 'Automated evaluation unavailable — this answer needs manual review.',
+      promptVersion: INTERVIEW_EVALUATION_VERSION,
+      evaluatedAt: new Date(),
+      needsManualReview: true,
+    }),
+  });
+}
+
+const gdReviewAssistResponseSchema = z.object({
+  verdict: z.enum(['pass', 'fail']),
+  comments: z.string().min(1),
+});
+
+/**
+ * Drafts reviewer notes + a suggested verdict for a GD/video submission, for
+ * the admin to edit before saving — never applied automatically.
+ */
+export async function assistReviewGdSubmission({ userId, prompt, response }) {
+  return withLogging({
+    userId,
+    operation: 'gd_review_assist',
+    promptVersion: GD_REVIEW_ASSIST_VERSION,
+    fn: async () => {
+      const builtPrompt = buildGdReviewAssistPrompt({ prompt, response });
+      const raw = await generateContent(builtPrompt);
+      const parsed = gdReviewAssistResponseSchema.safeParse(JSON.parse(extractJson(raw)));
+      if (!parsed.success) {
+        throw new Error(`Malformed Gemini response: ${parsed.error.message}`);
+      }
+      return parsed.data;
+    },
+    fallback: () => ({
+      verdict: 'fail',
+      comments: '(AI review draft unavailable — please review this submission manually.)',
+    }),
   });
 }
 

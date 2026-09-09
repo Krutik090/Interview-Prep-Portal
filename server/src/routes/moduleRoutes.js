@@ -30,7 +30,6 @@ router.post(
   moduleController.requestAiDraft,
 );
 
-// Student progress endpoints (mark-read, submissions, etc.) depend on
-// Enrollment/ModuleProgress and are added in Phase 3.
+router.post('/:moduleId/mark-read', moduleController.markRead);
 
 export default router;

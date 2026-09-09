@@ -5,11 +5,13 @@
 import { logger } from '../utils/logger.js';
 import { connectDb } from '../config/db.js';
 import { startProfileSummarizeWorker } from './workers/profileSummarizeWorker.js';
+import { startInterviewWorker } from './workers/interviewWorker.js';
 
 async function main() {
   await connectDb();
   startProfileSummarizeWorker();
-  logger.info('Worker process started: ai-profile');
+  startInterviewWorker();
+  logger.info('Worker process started: ai-profile, ai-interview');
 }
 
 main().catch((err) => {

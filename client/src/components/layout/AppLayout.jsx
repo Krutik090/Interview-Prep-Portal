@@ -28,7 +28,12 @@ export default function AppLayout() {
               <Link to="/trainings">Trainings</Link>
             </>
           )}
-          {user?.role === 'admin' && <Link to="/admin">Admin</Link>}
+          {user?.role === 'admin' && (
+            <>
+              <Link to="/admin">Admin</Link>
+              <Link to="/admin/gd-queue">GD Queue</Link>
+            </>
+          )}
           {user ? (
             <button onClick={handleLogout} className="underline">
               Log out

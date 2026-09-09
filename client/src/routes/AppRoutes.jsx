@@ -9,6 +9,7 @@ import TrainingCatalogPage from '../features/trainings/TrainingCatalogPage.jsx';
 import TrainingDetailPage from '../features/trainings/TrainingDetailPage.jsx';
 import AdminDashboardPage from '../features/admin/AdminDashboardPage.jsx';
 import ProgramManagePage from '../features/admin/ProgramManagePage.jsx';
+import GdReviewQueuePage from '../features/admin/GdReviewQueuePage.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import RequireOnboarding from './RequireOnboarding.jsx';
 import RoleRoute from './RoleRoute.jsx';
@@ -28,6 +29,7 @@ export default function AppRoutes() {
           <Route element={<RoleRoute allow={['admin']} />}>
             <Route path="/admin" element={<AdminDashboardPage />} />
             <Route path="/admin/trainings/:programId" element={<ProgramManagePage />} />
+            <Route path="/admin/gd-queue" element={<GdReviewQueuePage />} />
           </Route>
 
           <Route element={<RequireOnboarding />}>

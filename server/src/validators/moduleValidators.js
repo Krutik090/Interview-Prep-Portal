@@ -7,6 +7,7 @@ const baseFields = {
   order: z.number().int().min(0).optional(),
   isRequired: z.boolean().optional(),
   maxScore: z.number().positive().optional(),
+  status: z.enum(['draft', 'published']).optional(),
 };
 
 const quizQuestionSchema = z
