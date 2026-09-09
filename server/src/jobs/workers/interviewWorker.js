@@ -1,6 +1,6 @@
 import { Worker } from 'bullmq';
 import { createRedisConnection } from '../../config/redis.js';
-import { QUEUE_NAMES } from '../queues.js';
+import { QUEUE_NAMES, getQueue } from '../queues.js';
 import { logger } from '../../utils/logger.js';
 import * as submissionRepository from '../../repositories/submissionRepository.js';
 import * as moduleRepository from '../../repositories/moduleRepository.js';
@@ -63,6 +63,10 @@ export async function evaluateAnswers(submissionId) {
     scorePct: finalScorePct,
     submissionId: submission._id,
   });
+
+  await getQueue(QUEUE_NAMES.AI_TIPS)
+    .add('generateTips', { submissionId: String(submission._id) })
+    .catch((err) => logger.warn({ err, submissionId: submission._id }, 'Failed to enqueue performance-tips job'));
 }
 
 export function startInterviewWorker() {

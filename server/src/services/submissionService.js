@@ -6,6 +6,7 @@ import * as aiService from './aiService.js';
 import { getQueue, QUEUE_NAMES } from '../jobs/queues.js';
 import { gradeQuiz } from '../utils/scoreCalculator.js';
 import { ApiError } from '../utils/ApiError.js';
+import { logger } from '../utils/logger.js';
 
 function assertOwnership(submission, requesterId) {
   if (String(submission.student) !== String(requesterId)) {
@@ -24,6 +25,14 @@ function assertModuleType(module, expectedType) {
 
 async function nextAttemptNumber(studentId, moduleId) {
   return (await submissionRepository.countPriorAttempts(studentId, moduleId)) + 1;
+}
+
+// Fire-and-forget: performance tips are a nice-to-have generated after the
+// fact, never something a grading response should wait on.
+function enqueuePerformanceTips(submissionId) {
+  return getQueue(QUEUE_NAMES.AI_TIPS)
+    .add('generateTips', { submissionId: String(submissionId) })
+    .catch((err) => logger.warn({ err, submissionId }, 'Failed to enqueue performance-tips job'));
 }
 
 // --- Quiz (synchronous — pure computation, no external call) ---
@@ -48,6 +57,7 @@ export async function submitQuiz(studentId, moduleId, answers) {
     scorePct,
     submissionId: submission._id,
   });
+  await enqueuePerformanceTips(submission._id);
   return submission;
 }
 
@@ -158,6 +168,7 @@ export async function reviewGd(adminId, submissionId, { verdict, comments }) {
     scorePct: finalScorePct,
     submissionId: submission._id,
   });
+  await enqueuePerformanceTips(submission._id);
   return updated;
 }
 
@@ -177,6 +188,16 @@ export async function requestGdAiAssist(adminId, submissionId) {
     'gdReview.aiAssistDraft': draft.comments,
   });
   return draft;
+}
+
+export async function getPerformanceTips(requesterId, requesterRole, submissionId) {
+  const submission = await submissionRepository.findById(submissionId);
+  if (!submission) throw ApiError.notFound('Submission not found');
+  if (requesterRole !== 'admin') assertOwnership(submission, requesterId);
+  return {
+    ready: Boolean(submission.performanceTips?.text),
+    performanceTips: submission.performanceTips ?? null,
+  };
 }
 
 // --- Material (mark-read; no Submission doc, just progress) ---

@@ -53,4 +53,6 @@ router.post(
   submissionController.requestGdAiAssist,
 );
 
+router.get('/:submissionId/performance-tips', submissionController.getPerformanceTips);
+
 export default router;

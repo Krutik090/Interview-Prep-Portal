@@ -21,6 +21,10 @@ import {
   PROMPT_VERSION as GROOMING_PERSONALIZE_VERSION,
   buildGroomingPersonalizePrompt,
 } from '../prompts/groomingPersonalize/v1.js';
+import {
+  PROMPT_VERSION as PERFORMANCE_TIPS_VERSION,
+  buildPerformanceTipsPrompt,
+} from '../prompts/performanceTips/v1.js';
 
 const profileSummaryResponseSchema = z.object({
   summary: z.string().min(1),
@@ -258,6 +262,34 @@ export async function generatePersonalizedGroomingTip({ userId, articleTitle, ar
       return parsed.data.tip;
     },
     fallback: () => `Tip: apply "${articleTitle}" to your own interview prep — review it again before your next mock interview.`,
+  });
+}
+
+const performanceTipsResponseSchema = z.object({ tips: z.string().min(1) });
+
+/**
+ * Generates personalized improvement tips after a graded attempt. Falls
+ * back to a generic-but-still-useful message so a Gemini outage never
+ * blocks the student from seeing *something* after finishing a module.
+ */
+export async function generatePerformanceTips({ userId, moduleType, roundType, scorePct, details }) {
+  return withLogging({
+    userId,
+    operation: 'performance_tips',
+    promptVersion: PERFORMANCE_TIPS_VERSION,
+    fn: async () => {
+      const prompt = buildPerformanceTipsPrompt({ moduleType, roundType, scorePct, details });
+      const raw = await generateContent(prompt);
+      const parsed = performanceTipsResponseSchema.safeParse(JSON.parse(extractJson(raw)));
+      if (!parsed.success) {
+        throw new Error(`Malformed Gemini response: ${parsed.error.message}`);
+      }
+      return parsed.data.tips;
+    },
+    fallback: () =>
+      scorePct >= 70
+        ? 'Solid attempt — keep practicing consistently to stay sharp for the real interview.'
+        : 'Review this topic again and try a fresh attempt — focus on the areas you found hardest.',
   });
 }
 

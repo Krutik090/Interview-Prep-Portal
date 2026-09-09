@@ -57,3 +57,12 @@ export const requestGdAiAssist = asyncHandler(async (req, res) => {
   const draft = await submissionService.requestGdAiAssist(req.user.id, req.params.submissionId);
   res.status(200).json({ draft });
 });
+
+export const getPerformanceTips = asyncHandler(async (req, res) => {
+  const result = await submissionService.getPerformanceTips(
+    req.user.id,
+    req.user.role,
+    req.params.submissionId,
+  );
+  res.status(200).json(result);
+});

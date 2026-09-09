@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSubmitQuizMutation } from '../../submissions/submissionsApi.js';
+import PerformanceTips from '../../submissions/PerformanceTips.jsx';
 
 export default function QuizModuleView({ module, progress }) {
   const [answers, setAnswers] = useState({});
@@ -18,12 +19,16 @@ export default function QuizModuleView({ module, progress }) {
   const result = data?.submission;
 
   if (result || alreadyDone) {
+    const submissionId = result?._id ?? progress?.lastAttemptSubmission;
     return (
-      <div className="rounded border border-gray-200 p-3 text-sm dark:border-gray-800">
-        <p className="font-medium">
-          Score: {result?.finalScorePct ?? progress?.scorePct ?? 0}%
-        </p>
-        <p className="text-gray-500">Quiz already submitted for this attempt.</p>
+      <div className="flex flex-col gap-3">
+        <div className="rounded border border-gray-200 p-3 text-sm dark:border-gray-800">
+          <p className="font-medium">
+            Score: {result?.finalScorePct ?? progress?.scorePct ?? 0}%
+          </p>
+          <p className="text-gray-500">Quiz already submitted for this attempt.</p>
+        </div>
+        {submissionId && <PerformanceTips submissionId={submissionId} />}
       </div>
     );
   }

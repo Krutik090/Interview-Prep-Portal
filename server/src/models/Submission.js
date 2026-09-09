@@ -50,6 +50,13 @@ const submissionSchema = new Schema(
     finalScorePct: { type: Number, default: null },
     status: { type: String, enum: ['submitted', 'under_review', 'graded'], default: 'submitted', index: true },
     submittedAt: { type: Date, default: Date.now },
+
+    // Personalized improvement tips, generated asynchronously after grading.
+    performanceTips: {
+      text: String,
+      generatedAt: Date,
+      promptVersion: String,
+    },
   },
   { timestamps: true },
 );

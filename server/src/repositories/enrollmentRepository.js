@@ -23,3 +23,11 @@ export function listByProgram(programId) {
 export function updateById(id, update) {
   return Enrollment.findByIdAndUpdate(id, update, { new: true });
 }
+
+export function countAll() {
+  return Enrollment.countDocuments();
+}
+
+export function countByStatus(status) {
+  return Enrollment.countDocuments({ status });
+}

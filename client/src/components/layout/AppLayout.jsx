@@ -31,6 +31,7 @@ export default function AppLayout() {
           )}
           {user?.role === 'admin' && (
             <>
+              <Link to="/admin/stats">Dashboard</Link>
               <Link to="/admin">Admin</Link>
               <Link to="/admin/gd-queue">GD Queue</Link>
               <Link to="/admin/grooming">Grooming</Link>

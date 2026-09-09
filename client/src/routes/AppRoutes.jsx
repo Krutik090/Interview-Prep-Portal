@@ -13,6 +13,7 @@ import AdminDashboardPage from '../features/admin/AdminDashboardPage.jsx';
 import ProgramManagePage from '../features/admin/ProgramManagePage.jsx';
 import GdReviewQueuePage from '../features/admin/GdReviewQueuePage.jsx';
 import AdminGroomingPage from '../features/grooming/AdminGroomingPage.jsx';
+import AdminStatsPage from '../features/admin/AdminStatsPage.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import RequireOnboarding from './RequireOnboarding.jsx';
 import RoleRoute from './RoleRoute.jsx';
@@ -31,6 +32,7 @@ export default function AppRoutes() {
           {/* Admin accounts skip the student onboarding gate entirely. */}
           <Route element={<RoleRoute allow={['admin']} />}>
             <Route path="/admin" element={<AdminDashboardPage />} />
+            <Route path="/admin/stats" element={<AdminStatsPage />} />
             <Route path="/admin/trainings/:programId" element={<ProgramManagePage />} />
             <Route path="/admin/gd-queue" element={<GdReviewQueuePage />} />
             <Route path="/admin/grooming" element={<AdminGroomingPage />} />

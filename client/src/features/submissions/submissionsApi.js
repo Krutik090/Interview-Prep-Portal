@@ -58,6 +58,10 @@ export const submissionsApi = apiSlice.injectEndpoints({
     requestGdAiAssist: builder.mutation({
       query: (submissionId) => ({ url: `/submissions/gd/${submissionId}/ai-assist-review`, method: 'post' }),
     }),
+    getPerformanceTips: builder.query({
+      query: (submissionId) => ({ url: `/submissions/${submissionId}/performance-tips` }),
+      providesTags: (result, error, submissionId) => [{ type: 'Submission', id: `${submissionId}-tips` }],
+    }),
   }),
 });
 
@@ -71,4 +75,5 @@ export const {
   useListGdQueueQuery,
   useReviewGdMutation,
   useRequestGdAiAssistMutation,
+  useGetPerformanceTipsQuery,
 } = submissionsApi;

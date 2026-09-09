@@ -4,6 +4,7 @@ import {
   useGetAiInterviewQuery,
   useAnswerAiInterviewMutation,
 } from '../../submissions/submissionsApi.js';
+import PerformanceTips from '../../submissions/PerformanceTips.jsx';
 
 export default function AiInterviewModuleView({ module, progress }) {
   const [submissionId, setSubmissionId] = useState(null);
@@ -31,9 +32,12 @@ export default function AiInterviewModuleView({ module, progress }) {
 
   if (progress?.status === 'completed' || progress?.status === 'failed') {
     return (
-      <div className="rounded border border-gray-200 p-3 text-sm dark:border-gray-800">
-        <p className="font-medium">Score: {progress.scorePct}%</p>
-        <p className="text-gray-500">Mock interview already completed.</p>
+      <div className="flex flex-col gap-3">
+        <div className="rounded border border-gray-200 p-3 text-sm dark:border-gray-800">
+          <p className="font-medium">Score: {progress.scorePct}%</p>
+          <p className="text-gray-500">Mock interview already completed.</p>
+        </div>
+        {progress.lastAttemptSubmission && <PerformanceTips submissionId={progress.lastAttemptSubmission} />}
       </div>
     );
   }
@@ -67,6 +71,7 @@ export default function AiInterviewModuleView({ module, progress }) {
             </p>
           </div>
         ))}
+        <PerformanceTips submissionId={submission._id} />
       </div>
     );
   }

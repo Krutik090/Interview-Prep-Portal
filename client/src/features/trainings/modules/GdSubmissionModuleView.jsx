@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSubmitGdMutation } from '../../submissions/submissionsApi.js';
+import PerformanceTips from '../../submissions/PerformanceTips.jsx';
 
 export default function GdSubmissionModuleView({ module, progress }) {
   const [text, setText] = useState('');
@@ -21,10 +22,15 @@ export default function GdSubmissionModuleView({ module, progress }) {
   const done = progress?.status === 'completed' || progress?.status === 'failed' || submission;
 
   if (done) {
+    const submissionId = submission?._id ?? progress?.lastAttemptSubmission;
     return (
-      <div className="rounded border border-gray-200 p-3 text-sm dark:border-gray-800">
-        <p className="font-medium">Submitted — awaiting review.</p>
-        {progress?.scorePct != null && <p>Score: {progress.scorePct}%</p>}
+      <div className="flex flex-col gap-3">
+        <div className="rounded border border-gray-200 p-3 text-sm dark:border-gray-800">
+          <p className="font-medium">
+            {progress?.scorePct != null ? `Score: ${progress.scorePct}%` : 'Submitted — awaiting review.'}
+          </p>
+        </div>
+        {submissionId && <PerformanceTips submissionId={submissionId} />}
       </div>
     );
   }

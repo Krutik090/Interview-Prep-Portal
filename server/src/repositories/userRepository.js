@@ -26,6 +26,10 @@ export function updateById(id, update) {
   return User.findByIdAndUpdate(id, update, { new: true });
 }
 
+export function countStudents() {
+  return User.countDocuments({ role: 'student' });
+}
+
 export function listStudents({ page = 1, limit = 20, search } = {}) {
   const filter = { role: 'student' };
   if (search) {

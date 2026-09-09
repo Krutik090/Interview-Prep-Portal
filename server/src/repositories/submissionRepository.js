@@ -16,6 +16,10 @@ export function updateById(id, update) {
   return Submission.findByIdAndUpdate(id, update, { new: true });
 }
 
+export function countGdPendingReview() {
+  return Submission.countDocuments({ type: 'gd_submission', status: 'under_review' });
+}
+
 export function listGdReviewQueue() {
   return Submission.find({ type: 'gd_submission', status: 'under_review' })
     .populate('student', 'email')
