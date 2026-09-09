@@ -38,18 +38,33 @@ export const globalRateLimiter = rateLimit({
   store: redisStore('rl:global:'),
 });
 
-// Stricter limiter for auth endpoints (login/register/refresh) to blunt
-// credential stuffing / brute force. The limit is relaxed in test env so
-// functional test suites (which legitimately issue many sequential
-// register/login/refresh calls from the same IP) don't cross-contaminate —
-// the limiter's own behavior is exercised by a dedicated rate-limit test
-// instead of the functional auth/onboarding/profile suites.
-export const authRateLimiter = rateLimit({
+// Login and registration each get their own budget rather than sharing one
+// (as they originally did) — a few background token-refresh calls or one
+// registration shouldn't eat into the budget meant to slow down password
+// guessing on /login. Refresh itself isn't given a strict limiter at all:
+// a refresh token is a high-entropy value, not a guessable secret, so
+// there's nothing here for a brute-force limiter to protect against beyond
+// what the global per-IP limiter (app.js) already covers.
+//
+// Limits are relaxed in test env so functional test suites (which
+// legitimately issue many sequential register/login calls from the same
+// IP) don't cross-contaminate — the limiter's own behavior is exercised by
+// a dedicated rate-limit test instead of the functional auth suites.
+export const loginRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: env.isTest ? 1000 : 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: redisStore('rl:login:'),
+  message: { message: 'Too many login attempts, please try again later.' },
+});
+
+export const registerRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: env.isTest ? 1000 : 10,
   standardHeaders: true,
   legacyHeaders: false,
-  store: redisStore('rl:auth:'),
+  store: redisStore('rl:register:'),
   message: { message: 'Too many attempts, please try again later.' },
 });
 

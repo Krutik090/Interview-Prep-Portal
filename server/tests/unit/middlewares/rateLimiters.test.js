@@ -3,10 +3,10 @@ import request from 'supertest';
 import rateLimit from 'express-rate-limit';
 
 // Exercises the express-rate-limit wiring pattern in isolation (a fresh,
-// low-limit instance) rather than the app's real authRateLimiter, which is
-// deliberately relaxed in test env — see rateLimiters.js — to avoid
-// cross-contaminating the functional auth/onboarding/profile suites that
-// share one app instance and IP.
+// low-limit instance) rather than the app's real loginRateLimiter/
+// registerRateLimiter, which are deliberately relaxed in test env — see
+// rateLimiters.js — to avoid cross-contaminating the functional auth/
+// onboarding/profile suites that share one app instance and IP.
 describe('rate limiter wiring', () => {
   it('returns 429 once the limit is exceeded within the window', async () => {
     const app = express();
