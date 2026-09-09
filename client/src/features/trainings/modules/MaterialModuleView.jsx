@@ -1,4 +1,5 @@
 import { useMarkModuleReadMutation } from '../../submissions/submissionsApi.js';
+import { sanitizeHtml } from '../../../lib/sanitizeHtml.js';
 
 export default function MaterialModuleView({ programId, module, progress }) {
   const [markRead, { isLoading }] = useMarkModuleReadMutation();
@@ -6,7 +7,9 @@ export default function MaterialModuleView({ programId, module, progress }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="whitespace-pre-wrap text-sm">{module.contentBody}</p>
+      {/* contentBody is admin-authored rich text: sanitized server-side before
+          storage, and again client-side (DOMPurify) before rendering. */}
+      <div className="text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHtml(module.contentBody) }} />
       {module.videoUrl && (
         <a href={module.videoUrl} target="_blank" rel="noreferrer" className="text-sm underline">
           Watch video

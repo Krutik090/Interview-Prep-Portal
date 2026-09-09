@@ -17,6 +17,10 @@ import {
   PROMPT_VERSION as GD_REVIEW_ASSIST_VERSION,
   buildGdReviewAssistPrompt,
 } from '../prompts/gdReviewAssist/v1.js';
+import {
+  PROMPT_VERSION as GROOMING_PERSONALIZE_VERSION,
+  buildGroomingPersonalizePrompt,
+} from '../prompts/groomingPersonalize/v1.js';
 
 const profileSummaryResponseSchema = z.object({
   summary: z.string().min(1),
@@ -229,6 +233,31 @@ export async function assistReviewGdSubmission({ userId, prompt, response }) {
       verdict: 'fail',
       comments: '(AI review draft unavailable — please review this submission manually.)',
     }),
+  });
+}
+
+const groomingPersonalizeResponseSchema = z.object({ tip: z.string().min(1) });
+
+/**
+ * Personalizes a grooming article's advice to one student's profile. Result
+ * is cached by the caller (groomingService) — this function itself just
+ * makes the Gemini call + fallback.
+ */
+export async function generatePersonalizedGroomingTip({ userId, articleTitle, articleBody, profileSummary }) {
+  return withLogging({
+    userId,
+    operation: 'grooming_personalize',
+    promptVersion: GROOMING_PERSONALIZE_VERSION,
+    fn: async () => {
+      const prompt = buildGroomingPersonalizePrompt({ articleTitle, articleBody, profileSummary });
+      const raw = await generateContent(prompt);
+      const parsed = groomingPersonalizeResponseSchema.safeParse(JSON.parse(extractJson(raw)));
+      if (!parsed.success) {
+        throw new Error(`Malformed Gemini response: ${parsed.error.message}`);
+      }
+      return parsed.data.tip;
+    },
+    fallback: () => `Tip: apply "${articleTitle}" to your own interview prep — review it again before your next mock interview.`,
   });
 }
 

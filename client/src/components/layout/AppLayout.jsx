@@ -26,12 +26,14 @@ export default function AppLayout() {
             <>
               <Link to="/dashboard">Profile</Link>
               <Link to="/trainings">Trainings</Link>
+              <Link to="/grooming">Grooming</Link>
             </>
           )}
           {user?.role === 'admin' && (
             <>
               <Link to="/admin">Admin</Link>
               <Link to="/admin/gd-queue">GD Queue</Link>
+              <Link to="/admin/grooming">Grooming</Link>
             </>
           )}
           {user ? (

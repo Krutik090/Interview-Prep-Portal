@@ -2,13 +2,24 @@ import * as moduleRepository from '../repositories/moduleRepository.js';
 import * as trainingProgramRepository from '../repositories/trainingProgramRepository.js';
 import * as aiService from './aiService.js';
 import { ApiError } from '../utils/ApiError.js';
+import { sanitizeRichText } from '../utils/sanitizeRichText.js';
+
+function sanitizeModuleBody(type, data) {
+  if (type === 'material' && data.contentBody) {
+    return { ...data, contentBody: sanitizeRichText(data.contentBody) };
+  }
+  return data;
+}
 
 export async function create(programId, body) {
   const program = await trainingProgramRepository.findById(programId);
   if (!program) throw ApiError.notFound('Training program not found');
 
   const { type, ...data } = body;
-  const module = await moduleRepository.createModule(type, { ...data, program: programId });
+  const module = await moduleRepository.createModule(type, {
+    ...sanitizeModuleBody(type, data),
+    program: programId,
+  });
   await trainingProgramRepository.addModuleToOrder(programId, module._id);
   return module;
 }
@@ -26,8 +37,8 @@ export async function update(moduleId, body) {
       `Module type mismatch: this module is "${existing.type}", not "${body.type}"`,
     );
   }
-  const { type: _type, ...data } = body;
-  return moduleRepository.updateById(moduleId, data);
+  const { type, ...data } = body;
+  return moduleRepository.updateById(moduleId, sanitizeModuleBody(type, data));
 }
 
 export async function remove(moduleId) {
