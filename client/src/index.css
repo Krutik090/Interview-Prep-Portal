@@ -1,10 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Inter+Tight:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
+@theme {
+  /* Structure */
+  --color-ink: #14161f;
+  --color-paper: #fbfaf9;
+  --color-surface: #ffffff;
+  --color-line: #e6e3de;
+  --color-line-strong: #d3cfc8;
+  --color-muted: #6e6c68;
+
+  /* Brand — deep ink-navy, kept distinct from every round colour so an
+     action is never mistaken for a round identity. */
+  --color-brand: #1b2a5b;
+  --color-brand-hover: #24376f;
+  --color-brand-soft: #eef1f9;
+
+  /* Round identities — these carry meaning, not decoration */
+  --color-aptitude: #2f5fe0;
+  --color-aptitude-soft: #eaf0fd;
+  --color-gd: #6b3fa0;
+  --color-gd-soft: #f2ecfa;
+  --color-technical: #1e7a5a;
+  --color-technical-soft: #e7f4ef;
+  --color-hr: #b03060;
+  --color-hr-soft: #fbecf2;
+
+  /* Status */
+  --color-pass: #1e7a5a;
+  --color-pass-soft: #e7f4ef;
+  --color-fail: #b4342a;
+  --color-fail-soft: #fdecea;
+  --color-pending: #9a6a12;
+  --color-pending-soft: #fdf3e0;
+
+  --font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+}
+
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   margin: 0;
   min-height: 100svh;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  letter-spacing: -0.018em;
+  color: var(--color-ink);
+}
+
+/* Visible keyboard focus everywhere, without the default double-ring on
+   elements that already draw their own border. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

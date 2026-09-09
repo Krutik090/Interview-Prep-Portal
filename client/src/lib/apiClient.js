@@ -20,17 +20,28 @@ apiClient.interceptors.request.use((config) => {
 
 let refreshPromise = null;
 
+const REFRESH_PATH = '/auth/refresh';
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const { config, response } = error;
+
+    // A 401 from the refresh endpoint itself just means there's no valid
+    // session — it must never re-enter this handler, or the retry ends up
+    // awaiting the very promise that's failing and deadlocks the app.
+    if (config?.url === REFRESH_PATH) {
+      store.dispatch(loggedOut());
+      return Promise.reject(error);
+    }
+
     if (response?.status !== 401 || config._retried) {
       return Promise.reject(error);
     }
     config._retried = true;
 
     try {
-      refreshPromise ??= apiClient.post('/auth/refresh').finally(() => {
+      refreshPromise ??= apiClient.post(REFRESH_PATH).finally(() => {
         refreshPromise = null;
       });
       const { data } = await refreshPromise;

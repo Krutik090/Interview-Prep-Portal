@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { ChevronLeft, FileText, ListChecks, MessagesSquare, Mic, Plus, Trash2, Users } from 'lucide-react';
 import {
   useGetTrainingQuery,
   useListModulesQuery,
@@ -7,117 +8,221 @@ import {
   useSetTrainingPublishStatusMutation,
   useDeleteModuleMutation,
 } from '../trainings/trainingsApi.js';
+import { useListRosterQuery } from '../enrollments/enrollmentsApi.js';
 import ModuleEditorForm from './ModuleEditorForm.jsx';
+import PageHeader from '../../components/ui/PageHeader.jsx';
+import { Panel, PanelHeader } from '../../components/ui/Panel.jsx';
+import Button from '../../components/ui/Button.jsx';
+import { Field, Input } from '../../components/ui/Field.jsx';
+import { RoundBadge, StatusBadge } from '../../components/ui/Badge.jsx';
+import { ScorePill, ProgressBar } from '../../components/ui/Progress.jsx';
+import { Table, Th, Td, Tr } from '../../components/ui/Table.jsx';
+import { EmptyState, LoadingState } from '../../components/ui/Feedback.jsx';
+import { MODULE_META } from '../../components/ui/meta.js';
 
-const TYPE_LABELS = {
-  material: 'Material',
-  quiz: 'Quiz',
-  ai_interview: 'AI mock interview',
-  gd_submission: 'GD/video submission',
+const MODULE_ICONS = {
+  material: FileText,
+  quiz: ListChecks,
+  ai_interview: Mic,
+  gd_submission: MessagesSquare,
 };
 
 export default function ProgramManagePage() {
   const { programId } = useParams();
   const { data: programData, isLoading: loadingProgram } = useGetTrainingQuery(programId);
   const { data: modulesData, isLoading: loadingModules } = useListModulesQuery(programId);
+  const { data: rosterData } = useListRosterQuery(programId);
   const [updateTraining] = useUpdateTrainingMutation();
   const [setPublishStatus] = useSetTrainingPublishStatusMutation();
   const [deleteModule] = useDeleteModuleMutation();
-  const [editingModuleId, setEditingModuleId] = useState(undefined);
+  const [editingModuleId, setEditingModuleId] = useState(null);
   const [addingModule, setAddingModule] = useState(false);
 
-  if (loadingProgram || loadingModules) return <p>Loading...</p>;
+  if (loadingProgram || loadingModules) return <LoadingState />;
 
-  const program = programData.program;
+  const { program } = programData;
   const modules = modulesData.modules;
-
-  async function handlePassCriteriaSave(minOverallScorePct) {
-    await updateTraining({ programId, passCriteria: { minOverallScorePct: Number(minOverallScorePct) } });
-  }
+  const roster = rosterData?.roster ?? [];
+  const published = program.status === 'published';
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{program.title}</h1>
-          <p className="text-sm text-gray-500">
-            {program.roundType} · {program.status}
-          </p>
-        </div>
-        <button
-          className="rounded border border-gray-300 px-3 py-1 text-sm dark:border-gray-700"
-          onClick={() => setPublishStatus({ programId, publish: program.status !== 'published' })}
-        >
-          {program.status === 'published' ? 'Unpublish' : 'Publish'}
-        </button>
-      </div>
+    <div className="mx-auto max-w-4xl">
+      <Link
+        to="/admin/trainings"
+        className="mb-4 inline-flex items-center gap-1 text-[13px] font-medium text-muted hover:text-ink"
+      >
+        <ChevronLeft size={15} aria-hidden="true" />
+        All programs
+      </Link>
 
-      <p className="text-sm">{program.description}</p>
-
-      <label className="flex max-w-xs flex-col gap-1 text-sm">
-        Minimum overall score to pass (%)
-        <input
-          type="number"
-          min={0}
-          max={100}
-          defaultValue={program.passCriteria?.minOverallScorePct ?? 70}
-          onBlur={(e) => handlePassCriteriaSave(e.target.value)}
-          className="rounded border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
-        />
-      </label>
-
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-medium">Modules ({modules.length})</h2>
-          <button
-            className="rounded border border-gray-300 px-3 py-1 text-sm dark:border-gray-700"
-            onClick={() => setAddingModule(true)}
+      <PageHeader
+        title={program.title}
+        description={program.description}
+        actions={
+          <Button
+            variant={published ? 'secondary' : 'primary'}
+            onClick={() => setPublishStatus({ programId, publish: !published })}
           >
-            + Add module
-          </button>
+            {published ? 'Unpublish' : 'Publish for students'}
+          </Button>
+        }
+      >
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <RoundBadge roundType={program.roundType} />
+          <StatusBadge status={program.status} />
+        </div>
+      </PageHeader>
+
+      <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+        <div className="flex flex-col gap-5">
+          <Panel>
+            <PanelHeader
+              title={`Modules (${modules.length})`}
+              description="Students work through these in order. Each counts toward the program score."
+              actions={
+                <Button size="sm" icon={Plus} onClick={() => setAddingModule(true)}>
+                  Add module
+                </Button>
+              }
+            />
+
+            {addingModule && (
+              <div className="border-b border-line bg-paper/40 px-5 py-5">
+                <ModuleEditorForm programId={programId} onDone={() => setAddingModule(false)} />
+              </div>
+            )}
+
+            {modules.length === 0 && !addingModule ? (
+              <EmptyState
+                icon={ListChecks}
+                title="No modules yet"
+                description="Add reading material, a quiz, a mock interview, or a submission task."
+                action={
+                  <Button size="sm" icon={Plus} onClick={() => setAddingModule(true)}>
+                    Add module
+                  </Button>
+                }
+              />
+            ) : (
+              <ul className="divide-y divide-line">
+                {modules.map((module, i) => {
+                  const Icon = MODULE_ICONS[module.type];
+                  return editingModuleId === module._id ? (
+                    <li key={module._id} className="bg-paper/40 px-5 py-5">
+                      <ModuleEditorForm
+                        programId={programId}
+                        existingModule={module}
+                        onDone={() => setEditingModuleId(null)}
+                      />
+                    </li>
+                  ) : (
+                    <li key={module._id} className="flex items-center gap-3.5 px-5 py-3.5">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
+                        <Icon size={15} strokeWidth={1.9} aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-ink">
+                          <span className="tabular-nums text-muted">{i + 1}.</span> {module.title}
+                        </p>
+                        <p className="text-[12.5px] text-muted">{MODULE_META[module.type]?.label}</p>
+                      </div>
+                      <StatusBadge status={module.status} />
+                      <div className="flex items-center gap-1.5">
+                        <Button size="sm" variant="ghost" onClick={() => setEditingModuleId(module._id)}>
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon={Trash2}
+                          aria-label={`Delete ${module.title}`}
+                          className="text-fail hover:bg-fail-soft"
+                          onClick={() => deleteModule({ programId, moduleId: module._id })}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Panel>
+
+          <Panel>
+            <PanelHeader title={`Enrolled students (${roster.length})`} />
+            {roster.length === 0 ? (
+              <EmptyState
+                icon={Users}
+                title="No one enrolled yet"
+                description={
+                  published
+                    ? 'Students will appear here once they enroll.'
+                    : 'Publish the program so students can enroll.'
+                }
+              />
+            ) : (
+              <Table>
+                <thead>
+                  <tr>
+                    <Th>Student</Th>
+                    <Th>Progress</Th>
+                    <Th className="text-right">Score</Th>
+                    <Th>Status</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {roster.map((enrollment) => (
+                    <Tr key={enrollment._id}>
+                      <Td className="font-medium">{enrollment.student?.email}</Td>
+                      <Td className="w-40">
+                        <ProgressBar
+                          value={enrollment.completedModules}
+                          total={enrollment.totalModules}
+                        />
+                      </Td>
+                      <Td className="text-right">
+                        <ScorePill
+                          score={enrollment.overallScorePct}
+                          threshold={program.passCriteria?.minOverallScorePct ?? 70}
+                        />
+                      </Td>
+                      <Td>
+                        <StatusBadge status={enrollment.status} />
+                      </Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </Table>
+            )}
+          </Panel>
         </div>
 
-        {addingModule && (
-          <ModuleEditorForm programId={programId} onDone={() => setAddingModule(false)} />
-        )}
-
-        <ul className="flex flex-col gap-2">
-          {modules.map((module) =>
-            editingModuleId === module._id ? (
-              <li key={module._id}>
-                <ModuleEditorForm
-                  programId={programId}
-                  existingModule={module}
-                  onDone={() => setEditingModuleId(undefined)}
+        <Panel className="h-fit">
+          <PanelHeader title="Pass criteria" description="Applied when a student finishes every module." />
+          <div className="px-5 py-5">
+            <Field
+              label="Minimum overall score"
+              hint="The average across all modules a student needs to pass this program."
+            >
+              {(a) => (
+                <Input
+                  {...a}
+                  type="number"
+                  min={0}
+                  max={100}
+                  defaultValue={program.passCriteria?.minOverallScorePct ?? 70}
+                  onBlur={(e) =>
+                    updateTraining({
+                      programId,
+                      passCriteria: { minOverallScorePct: Number(e.target.value) },
+                    })
+                  }
                 />
-              </li>
-            ) : (
-              <li
-                key={module._id}
-                className="flex items-center justify-between rounded border border-gray-200 px-3 py-2 text-sm dark:border-gray-800"
-              >
-                <span>
-                  {module.title}{' '}
-                  <span className="text-gray-500">
-                    ({TYPE_LABELS[module.type]}, {module.status})
-                  </span>
-                </span>
-                <span className="flex gap-2">
-                  <button className="underline" onClick={() => setEditingModuleId(module._id)}>
-                    Edit
-                  </button>
-                  <button
-                    className="text-red-600 underline"
-                    onClick={() => deleteModule({ programId, moduleId: module._id })}
-                  >
-                    Delete
-                  </button>
-                </span>
-              </li>
-            ),
-          )}
-        </ul>
-      </section>
+              )}
+            </Field>
+            <p className="mt-3 text-[12.5px] text-muted">Saved when you click away from the field.</p>
+          </div>
+        </Panel>
+      </div>
     </div>
   );
 }

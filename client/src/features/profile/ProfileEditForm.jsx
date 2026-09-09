@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useUpdateMyProfileMutation } from './profileApi.js';
+import Button from '../../components/ui/Button.jsx';
+import { Field, Input, TagInput } from '../../components/ui/Field.jsx';
+import { InlineError } from '../../components/ui/Feedback.jsx';
 
 function tagsToString(tags) {
   return (tags ?? []).join(', ');
@@ -24,9 +27,11 @@ export default function ProfileEditForm({ profile, onDone }) {
   });
   const [updateMyProfile, { isLoading, error }] = useUpdateMyProfileMutation();
 
+  const set = (name) => (e) => setForm((prev) => ({ ...prev, [name]: e.target.value }));
+
   async function handleSubmit(e) {
     e.preventDefault();
-    const payload = {
+    const result = await updateMyProfile({
       fullName: form.fullName,
       targetRole: form.targetRole,
       targetDomain: form.targetDomain,
@@ -34,45 +39,52 @@ export default function ProfileEditForm({ profile, onDone }) {
       strengths: stringToTags(form.strengths),
       weaknesses: stringToTags(form.weaknesses),
       preferredCompanies: stringToTags(form.preferredCompanies),
-    };
-    const result = await updateMyProfile(payload);
+    });
     if (!result.error) onDone();
   }
 
-  function field(name, label) {
-    return (
-      <label className="flex flex-col gap-1 text-sm">
-        {label}
-        <input
-          className="rounded border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
-          value={form[name]}
-          onChange={(e) => setForm((prev) => ({ ...prev, [name]: e.target.value }))}
-        />
-      </label>
-    );
-  }
-
   return (
-    <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-      {field('fullName', 'Full name')}
-      {field('targetRole', 'Target role')}
-      {field('targetDomain', 'Target domain')}
-      {field('currentSkills', 'Skills (comma-separated)')}
-      {field('strengths', 'Strengths (comma-separated)')}
-      {field('weaknesses', 'Areas to improve (comma-separated)')}
-      {field('preferredCompanies', 'Preferred companies (comma-separated)')}
-      {error && <p className="text-sm text-red-600">Could not save profile.</p>}
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="rounded bg-gray-900 px-3 py-2 text-white disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900"
-        >
-          {isLoading ? 'Saving...' : 'Save'}
-        </button>
-        <button type="button" className="rounded border border-gray-300 px-3 py-2 dark:border-gray-700" onClick={onDone}>
+    <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+      <Field label="Full name">
+        {(a) => <Input {...a} value={form.fullName} onChange={set('fullName')} />}
+      </Field>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Target role" hint="The job title you're preparing for.">
+          {(a) => <Input {...a} value={form.targetRole} onChange={set('targetRole')} />}
+        </Field>
+        <Field label="Target domain">
+          {(a) => <Input {...a} value={form.targetDomain} onChange={set('targetDomain')} />}
+        </Field>
+      </div>
+
+      <Field label="Skills" hint="Separate each one with a comma.">
+        {(a) => <TagInput {...a} value={form.currentSkills} onChange={set('currentSkills')} />}
+      </Field>
+
+      <Field label="Strengths" hint="Separate each one with a comma.">
+        {(a) => <TagInput {...a} value={form.strengths} onChange={set('strengths')} />}
+      </Field>
+
+      <Field label="Areas to improve" hint="Separate each one with a comma.">
+        {(a) => <TagInput {...a} value={form.weaknesses} onChange={set('weaknesses')} />}
+      </Field>
+
+      <Field label="Preferred companies" hint="Separate each one with a comma.">
+        {(a) => (
+          <TagInput {...a} value={form.preferredCompanies} onChange={set('preferredCompanies')} />
+        )}
+      </Field>
+
+      {error && <InlineError>Could not save your changes. Check the fields and try again.</InlineError>}
+
+      <div className="mt-2 flex items-center gap-2 border-t border-line pt-5">
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? 'Saving' : 'Save changes'}
+        </Button>
+        <Button variant="ghost" onClick={onDone}>
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

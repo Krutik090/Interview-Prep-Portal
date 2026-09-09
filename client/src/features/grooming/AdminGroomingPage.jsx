@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Plus, Sparkles, Trash2 } from 'lucide-react';
 import {
   useListGroomingQuery,
   useCreateGroomingMutation,
@@ -6,16 +7,31 @@ import {
   useSetGroomingPublishStatusMutation,
   useRequestGroomingAiDraftMutation,
 } from './groomingApi.js';
+import PageHeader from '../../components/ui/PageHeader.jsx';
+import { Panel, PanelHeader } from '../../components/ui/Panel.jsx';
+import Button from '../../components/ui/Button.jsx';
+import { Field, Input, Select, Textarea } from '../../components/ui/Field.jsx';
+import { StatusBadge } from '../../components/ui/Badge.jsx';
+import { EmptyState, InlineError, LoadingState } from '../../components/ui/Feedback.jsx';
 
-const CATEGORIES = ['dress_code', 'body_language', 'communication', 'presentation', 'other'];
+const CATEGORIES = [
+  { value: 'dress_code', label: 'Dress code' },
+  { value: 'body_language', label: 'Body language' },
+  { value: 'communication', label: 'Communication' },
+  { value: 'presentation', label: 'Presentation' },
+  { value: 'other', label: 'Other' },
+];
+
+const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.value, c.label]));
 
 export default function AdminGroomingPage() {
   const { data, isLoading } = useListGroomingQuery();
-  const [createGrooming, { isLoading: creating }] = useCreateGroomingMutation();
+  const [createGrooming, { isLoading: creating, error }] = useCreateGroomingMutation();
   const [deleteGrooming] = useDeleteGroomingMutation();
   const [setPublishStatus] = useSetGroomingPublishStatusMutation();
   const [requestAiDraft, { isLoading: drafting }] = useRequestGroomingAiDraftMutation();
-  const [form, setForm] = useState({ title: '', category: CATEGORIES[0], body: '' });
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ title: '', category: CATEGORIES[0].value, body: '' });
   const [topic, setTopic] = useState('');
 
   async function handleAiDraft() {
@@ -26,80 +42,149 @@ export default function AdminGroomingPage() {
   async function handleCreate(e) {
     e.preventDefault();
     const result = await createGrooming(form);
-    if (!result.error) setForm({ title: '', category: CATEGORIES[0], body: '' });
+    if (!result.error) {
+      setForm({ title: '', category: CATEGORIES[0].value, body: '' });
+      setTopic('');
+      setShowForm(false);
+    }
   }
 
+  const articles = data?.articles ?? [];
+
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 p-6">
-      <h1 className="text-2xl font-semibold">Grooming content</h1>
+    <div className="mx-auto max-w-4xl">
+      <PageHeader
+        title="Grooming content"
+        description="Short guides on presentation, communication, and interview etiquette."
+        actions={
+          <Button icon={Plus} onClick={() => setShowForm((v) => !v)}>
+            {showForm ? 'Cancel' : 'New guide'}
+          </Button>
+        }
+      />
 
-      <form className="flex flex-col gap-3 rounded border border-gray-200 p-4 dark:border-gray-800" onSubmit={handleCreate}>
-        <input
-          className="rounded border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
-          placeholder="Title"
-          value={form.title}
-          onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-          required
-        />
-        <select
-          className="rounded border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
-          value={form.category}
-          onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
-        >
-          {CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-        <div className="flex gap-2">
-          <input
-            className="flex-1 rounded border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900"
-            placeholder="AI draft topic (optional, defaults to title)"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
+      {showForm && (
+        <Panel className="mb-5">
+          <PanelHeader title="New guide" description="Saved as a draft until you publish it." />
+          <form className="flex flex-col gap-4 px-5 py-5" onSubmit={handleCreate}>
+            <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
+              <Field label="Title" required>
+                {(a) => (
+                  <Input
+                    {...a}
+                    placeholder="e.g. Dressing for a video interview"
+                    value={form.title}
+                    onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+                    required
+                  />
+                )}
+              </Field>
+              <Field label="Category">
+                {(a) => (
+                  <Select
+                    {...a}
+                    value={form.category}
+                    onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+            </div>
+
+            <div className="rounded-lg border border-line bg-paper/50 p-3.5">
+              <p className="text-[13px] font-medium text-ink">Draft this with AI</p>
+              <p className="mt-0.5 text-[12.5px] text-muted">
+                Gives you a starting point to edit before publishing.
+              </p>
+              <div className="mt-2.5 flex flex-wrap gap-2">
+                <Input
+                  className="min-w-0 flex-1"
+                  placeholder={`Topic (defaults to "${form.title || 'the title'}")`}
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                />
+                <Button variant="secondary" icon={Sparkles} onClick={handleAiDraft} disabled={drafting}>
+                  {drafting ? 'Writing' : 'Draft'}
+                </Button>
+              </div>
+            </div>
+
+            <Field label="Body" required hint="Basic formatting is allowed; anything unsafe is stripped on save.">
+              {(a) => (
+                <Textarea
+                  {...a}
+                  rows={8}
+                  value={form.body}
+                  onChange={(e) => setForm((p) => ({ ...p, body: e.target.value }))}
+                  required
+                />
+              )}
+            </Field>
+
+            {error && <InlineError>Could not save the guide. Check the fields and try again.</InlineError>}
+
+            <div>
+              <Button type="submit" disabled={creating}>
+                {creating ? 'Creating' : 'Create guide'}
+              </Button>
+            </div>
+          </form>
+        </Panel>
+      )}
+
+      <Panel>
+        <PanelHeader title={`All guides (${articles.length})`} />
+        {isLoading ? (
+          <LoadingState />
+        ) : articles.length === 0 ? (
+          <EmptyState
+            icon={Sparkles}
+            title="No guides yet"
+            description="Write the first one, or start from an AI draft."
+            action={
+              <Button size="sm" icon={Plus} onClick={() => setShowForm(true)}>
+                New guide
+              </Button>
+            }
           />
-          <button type="button" disabled={drafting} onClick={handleAiDraft} className="rounded border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 disabled:opacity-50">
-            {drafting ? 'Drafting...' : 'AI draft'}
-          </button>
-        </div>
-        <textarea
-          className="min-h-32 rounded border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
-          placeholder="Body"
-          value={form.body}
-          onChange={(e) => setForm((prev) => ({ ...prev, body: e.target.value }))}
-          required
-        />
-        <button
-          type="submit"
-          disabled={creating}
-          className="self-start rounded bg-gray-900 px-3 py-2 text-white disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900"
-        >
-          {creating ? 'Creating...' : 'Create'}
-        </button>
-      </form>
-
-      {isLoading && <p>Loading...</p>}
-      <ul className="flex flex-col gap-2">
-        {data?.articles.map((article) => (
-          <li key={article._id} className="flex items-center justify-between rounded border border-gray-200 px-3 py-2 text-sm dark:border-gray-800">
-            <span>
-              {article.title} <span className="text-gray-500">({article.category}, {article.status})</span>
-            </span>
-            <span className="flex gap-2">
-              <button
-                className="underline"
-                onClick={() => setPublishStatus({ id: article._id, publish: article.status !== 'published' })}
-              >
-                {article.status === 'published' ? 'Unpublish' : 'Publish'}
-              </button>
-              <button className="text-red-600 underline" onClick={() => deleteGrooming(article._id)}>
-                Delete
-              </button>
-            </span>
-          </li>
-        ))}
-      </ul>
+        ) : (
+          <ul className="divide-y divide-line">
+            {articles.map((article) => (
+              <li key={article._id} className="flex flex-wrap items-center gap-3 px-5 py-3.5">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-ink">{article.title}</p>
+                  <p className="text-[12.5px] text-muted">{CATEGORY_LABEL[article.category]}</p>
+                </div>
+                <StatusBadge status={article.status} />
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() =>
+                      setPublishStatus({ id: article._id, publish: article.status !== 'published' })
+                    }
+                  >
+                    {article.status === 'published' ? 'Unpublish' : 'Publish'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon={Trash2}
+                    aria-label={`Delete ${article.title}`}
+                    className="text-fail hover:bg-fail-soft"
+                    onClick={() => deleteGrooming(article._id)}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
     </div>
   );
 }

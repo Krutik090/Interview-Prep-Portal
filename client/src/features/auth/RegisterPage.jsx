@@ -3,6 +3,9 @@ import { useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { useRegisterMutation } from './authApi.js';
 import { credentialsSet } from './authSlice.js';
+import Button from '../../components/ui/Button.jsx';
+import { Field, Input } from '../../components/ui/Field.jsx';
+import { InlineError } from '../../components/ui/Feedback.jsx';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -10,6 +13,8 @@ export default function RegisterPage() {
   const [register, { isLoading, error }] = useRegisterMutation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const tooShort = password.length > 0 && password.length < 8;
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -19,44 +24,69 @@ export default function RegisterPage() {
     navigate('/onboarding');
   }
 
+  const message =
+    error?.status === 409
+      ? 'An account already exists with that email. Log in instead.'
+      : error?.status === 429
+        ? 'Too many attempts. Wait a few minutes before trying again.'
+        : error
+          ? 'Could not create the account. Check your details and try again.'
+          : null;
+
   return (
-    <div className="mx-auto flex min-h-svh max-w-sm flex-col justify-center gap-4 p-6">
-      <h1 className="text-2xl font-semibold">Create your account</h1>
-      <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-        <input
-          className="rounded border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
-          type="email"
-          placeholder="Email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          className="rounded border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
-          type="password"
-          placeholder="Password (min 8 characters)"
-          autoComplete="new-password"
-          minLength={8}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        {error && (
-          <p className="text-sm text-red-600">
-            {error.data?.message ?? 'Registration failed. Please try again.'}
-          </p>
-        )}
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="rounded bg-gray-900 px-3 py-2 text-white disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900"
+    <div>
+      <h1 className="font-display text-[26px] font-semibold leading-tight">Create your account</h1>
+      <p className="mt-1.5 text-sm text-muted">
+        Answer a few questions next, and we&apos;ll suggest where to start.
+      </p>
+
+      <form className="mt-7 flex flex-col gap-4" onSubmit={handleSubmit}>
+        <Field label="Email">
+          {(a) => (
+            <Input
+              {...a}
+              type="email"
+              autoComplete="email"
+              placeholder="you@college.edu"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          )}
+        </Field>
+
+        <Field
+          label="Password"
+          hint="At least 8 characters."
+          error={tooShort ? 'Use at least 8 characters.' : undefined}
         >
-          {isLoading ? 'Creating account...' : 'Create account'}
-        </button>
+          {(a) => (
+            <Input
+              {...a}
+              type="password"
+              autoComplete="new-password"
+              placeholder="Create a password"
+              minLength={8}
+              invalid={tooShort}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          )}
+        </Field>
+
+        <InlineError>{message}</InlineError>
+
+        <Button type="submit" size="lg" disabled={isLoading || tooShort} className="mt-1 w-full">
+          {isLoading ? 'Creating account' : 'Create account'}
+        </Button>
       </form>
-      <p className="text-sm text-gray-500">
-        Already have an account? <Link to="/login" className="underline">Log in</Link>
+
+      <p className="mt-6 text-sm text-muted">
+        Already have an account?{' '}
+        <Link to="/login" className="font-medium text-brand underline underline-offset-2">
+          Log in
+        </Link>
       </p>
     </div>
   );

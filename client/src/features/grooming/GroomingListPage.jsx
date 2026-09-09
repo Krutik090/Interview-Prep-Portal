@@ -1,54 +1,95 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Shirt, Sparkles, Presentation, MessageCircle, Eye } from 'lucide-react';
 import { useListGroomingQuery } from './groomingApi.js';
+import PageHeader from '../../components/ui/PageHeader.jsx';
+import { Panel } from '../../components/ui/Panel.jsx';
+import { EmptyState, LoadingState } from '../../components/ui/Feedback.jsx';
 
-const CATEGORIES = ['dress_code', 'body_language', 'communication', 'presentation', 'other'];
-const CATEGORY_LABELS = {
-  dress_code: 'Dress code',
-  body_language: 'Body language',
-  communication: 'Communication',
-  presentation: 'Presentation',
-  other: 'Other',
-};
+const CATEGORIES = [
+  { key: 'dress_code', label: 'Dress code', icon: Shirt },
+  { key: 'body_language', label: 'Body language', icon: Eye },
+  { key: 'communication', label: 'Communication', icon: MessageCircle },
+  { key: 'presentation', label: 'Presentation', icon: Presentation },
+  { key: 'other', label: 'Other', icon: Sparkles },
+];
+
+const CATEGORY_MAP = Object.fromEntries(CATEGORIES.map((c) => [c.key, c]));
 
 export default function GroomingListPage() {
   const [category, setCategory] = useState('');
   const { data, isLoading } = useListGroomingQuery(category ? { category } : undefined);
+  const articles = data?.articles ?? [];
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4 p-6">
-      <h1 className="text-2xl font-semibold">Grooming & self-improvement</h1>
+    <div className="mx-auto max-w-5xl">
+      <PageHeader
+        title="Grooming guides"
+        description="How to present yourself on the day — what to wear, how to speak, and what interviewers read from body language."
+      />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="mb-5 flex flex-wrap gap-1.5">
         <button
-          className={`rounded border px-3 py-1 text-sm ${category === '' ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900' : 'border-gray-300 dark:border-gray-700'}`}
+          type="button"
           onClick={() => setCategory('')}
+          className={`rounded-lg border px-3 py-1.5 text-[13px] font-medium transition-colors ${
+            category === ''
+              ? 'border-brand bg-brand text-white'
+              : 'border-line-strong bg-surface text-muted hover:text-ink'
+          }`}
         >
-          All
+          Everything
         </button>
-        {CATEGORIES.map((c) => (
+        {CATEGORIES.map(({ key, label, icon: Icon }) => (
           <button
-            key={c}
-            className={`rounded border px-3 py-1 text-sm ${category === c ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900' : 'border-gray-300 dark:border-gray-700'}`}
-            onClick={() => setCategory(c)}
+            key={key}
+            type="button"
+            onClick={() => setCategory(key)}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] font-medium transition-colors ${
+              category === key
+                ? 'border-brand bg-brand text-white'
+                : 'border-line-strong bg-surface text-muted hover:text-ink'
+            }`}
           >
-            {CATEGORY_LABELS[c]}
+            <Icon size={14} strokeWidth={1.9} aria-hidden="true" />
+            {label}
           </button>
         ))}
       </div>
 
-      {isLoading && <p>Loading...</p>}
-      <ul className="flex flex-col gap-2">
-        {data?.articles.map((article) => (
-          <li key={article._id} className="rounded border border-gray-200 p-3 text-sm dark:border-gray-800">
-            <Link to={`/grooming/${article._id}`} className="font-medium underline">
-              {article.title}
-            </Link>
-            <p className="text-gray-500">{CATEGORY_LABELS[article.category]}</p>
-          </li>
-        ))}
-        {data && data.articles.length === 0 && <p className="text-gray-500">No articles published yet.</p>}
-      </ul>
+      {isLoading ? (
+        <LoadingState label="Loading guides" />
+      ) : articles.length === 0 ? (
+        <Panel>
+          <EmptyState
+            icon={Sparkles}
+            title="No guides here yet"
+            description="Your placement cell publishes these. Check another category, or come back later."
+          />
+        </Panel>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {articles.map((article) => {
+            const meta = CATEGORY_MAP[article.category] ?? CATEGORY_MAP.other;
+            const Icon = meta.icon;
+            return (
+              <Link
+                key={article._id}
+                to={`/grooming/${article._id}`}
+                className="group flex flex-col rounded-xl border border-line bg-surface p-5 shadow-[0_1px_2px_rgba(20,22,31,0.04)] transition-colors hover:border-line-strong"
+              >
+                <span className="mb-3.5 flex size-9 items-center justify-center rounded-lg bg-brand-soft text-brand">
+                  <Icon size={17} strokeWidth={1.9} aria-hidden="true" />
+                </span>
+                <h2 className="font-display text-[15.5px] font-semibold leading-snug text-ink group-hover:underline">
+                  {article.title}
+                </h2>
+                <p className="mt-1.5 text-[12.5px] text-muted">{meta.label}</p>
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

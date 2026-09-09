@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { GraduationCap } from 'lucide-react';
 import { useRefreshMutation } from '../features/auth/authApi.js';
 import { credentialsSet, loggedOut } from '../features/auth/authSlice.js';
 
@@ -29,6 +30,18 @@ export default function AuthBootstrap({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   }, []);
 
-  if (!ready) return null;
+  if (!ready) {
+    return (
+      <div className="flex min-h-svh items-center justify-center bg-paper">
+        <div className="flex items-center gap-2.5 opacity-70">
+          <span className="flex size-9 items-center justify-center rounded-lg bg-brand text-white">
+            <GraduationCap size={19} strokeWidth={1.9} aria-hidden="true" />
+          </span>
+          <span className="font-display text-[15px] font-semibold">Placement Prep</span>
+        </div>
+      </div>
+    );
+  }
+
   return children;
 }

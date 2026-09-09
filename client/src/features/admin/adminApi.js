@@ -11,7 +11,15 @@ export const adminApi = apiSlice.injectEndpoints({
     listStudents: builder.query({
       query: (params) => ({ url: '/admin/students', params }),
     }),
+    getStudentProgress: builder.query({
+      query: (userId) => ({ url: `/admin/students/${userId}/progress` }),
+    }),
   }),
 });
 
-export const { useGetDashboardStatsQuery, useGetAiUsageQuery, useListStudentsQuery } = adminApi;
+export const {
+  useGetDashboardStatsQuery,
+  useGetAiUsageQuery,
+  useListStudentsQuery,
+  useGetStudentProgressQuery,
+} = adminApi;

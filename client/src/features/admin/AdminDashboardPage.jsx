@@ -1,91 +1,123 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import {
-  useListTrainingsQuery,
-  useCreateTrainingMutation,
-  useSetTrainingPublishStatusMutation,
-  useDeleteTrainingMutation,
-} from '../trainings/trainingsApi.js';
+import { Award, MessagesSquare, TrendingUp, Users } from 'lucide-react';
+import { useGetDashboardStatsQuery, useGetAiUsageQuery } from './adminApi.js';
+import { useListGdQueueQuery } from '../submissions/submissionsApi.js';
+import PageHeader from '../../components/ui/PageHeader.jsx';
+import StatCard from '../../components/ui/StatCard.jsx';
+import { Panel, PanelHeader } from '../../components/ui/Panel.jsx';
+import { Table, Th, Td, Tr } from '../../components/ui/Table.jsx';
+import { Badge } from '../../components/ui/Badge.jsx';
+import { ButtonLink } from '../../components/ui/Button.jsx';
+import { EmptyState, LoadingState, SkeletonRows } from '../../components/ui/Feedback.jsx';
 
-const ROUND_TYPES = ['Aptitude', 'GD', 'Technical', 'HR'];
+const AI_OPERATION_LABEL = {
+  profile_summary: 'Profile summary',
+  training_recommend: 'Training recommendation',
+  interview_question_gen: 'Interview questions',
+  interview_evaluate: 'Answer evaluation',
+  content_draft: 'Content draft',
+  gd_review_assist: 'Review assist',
+  resume_polish: 'Resume writing',
+  performance_tips: 'Performance tips',
+  grooming_personalize: 'Grooming personalization',
+};
+
+const AI_STATUS_TONE = { success: 'pass', error: 'fail', rate_limited: 'pending', fallback: 'pending' };
+const AI_STATUS_LABEL = {
+  success: 'Succeeded',
+  error: 'Failed',
+  rate_limited: 'Rate limited',
+  fallback: 'Used fallback',
+};
 
 export default function AdminDashboardPage() {
-  const { data, isLoading } = useListTrainingsQuery();
-  const [createTraining, { isLoading: creating, error }] = useCreateTrainingMutation();
-  const [setPublishStatus] = useSetTrainingPublishStatusMutation();
-  const [deleteTraining] = useDeleteTrainingMutation();
-  const [form, setForm] = useState({ title: '', roundType: ROUND_TYPES[0], description: '' });
+  const { data: statsData, isLoading: loadingStats } = useGetDashboardStatsQuery();
+  const { data: usageData, isLoading: loadingUsage } = useGetAiUsageQuery();
+  const { data: queueData } = useListGdQueueQuery();
 
-  async function handleCreate(e) {
-    e.preventDefault();
-    const result = await createTraining(form);
-    if (!result.error) setForm({ title: '', roundType: ROUND_TYPES[0], description: '' });
-  }
+  const stats = statsData?.stats;
+  const pending = queueData?.submissions?.length ?? 0;
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 p-6">
-      <h1 className="text-2xl font-semibold">Training programs</h1>
+    <div className="mx-auto max-w-6xl">
+      <PageHeader
+        title="Dashboard"
+        description="Cohort progress and how the AI features are performing."
+        actions={
+          pending > 0 && (
+            <ButtonLink to="/admin/gd-queue" icon={MessagesSquare}>
+              Review {pending} submission{pending === 1 ? '' : 's'}
+            </ButtonLink>
+          )
+        }
+      />
 
-      <form className="flex flex-col gap-3 rounded border border-gray-200 p-4 dark:border-gray-800" onSubmit={handleCreate}>
-        <h2 className="font-medium">New program</h2>
-        <input
-          className="rounded border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
-          placeholder="Title"
-          value={form.title}
-          onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-          required
-        />
-        <select
-          className="rounded border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
-          value={form.roundType}
-          onChange={(e) => setForm((prev) => ({ ...prev, roundType: e.target.value }))}
-        >
-          {ROUND_TYPES.map((rt) => (
-            <option key={rt} value={rt}>
-              {rt}
-            </option>
-          ))}
-        </select>
-        <textarea
-          className="rounded border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
-          placeholder="Description"
-          value={form.description}
-          onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-        />
-        {error && <p className="text-sm text-red-600">Could not create program.</p>}
-        <button
-          type="submit"
-          disabled={creating}
-          className="self-start rounded bg-gray-900 px-3 py-2 text-white disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900"
-        >
-          {creating ? 'Creating...' : 'Create'}
-        </button>
-      </form>
+      {loadingStats ? (
+        <SkeletonRows rows={2} />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Students" value={stats.totalStudents} icon={Users} />
+          <StatCard label="Enrollments" value={stats.totalEnrollments} icon={TrendingUp} tone="aptitude" />
+          <StatCard
+            label="Pass rate"
+            value={`${stats.passRate}%`}
+            sublabel="Across all completed enrollments"
+            icon={Award}
+            tone="pass"
+          />
+          <StatCard
+            label="Awaiting review"
+            value={stats.pendingGdReviews}
+            sublabel={stats.pendingGdReviews > 0 ? 'Submissions need your verdict' : 'Nothing in the queue'}
+            icon={MessagesSquare}
+            tone={stats.pendingGdReviews > 0 ? 'pending' : 'brand'}
+          />
+        </div>
+      )}
 
-      <ul className="flex flex-col gap-2">
-        {isLoading && <p>Loading...</p>}
-        {data?.programs.map((program) => (
-          <li
-            key={program._id}
-            className="flex items-center justify-between rounded border border-gray-200 px-3 py-2 text-sm dark:border-gray-800"
-          >
-            <Link to={`/admin/trainings/${program._id}`} className="underline">
-              {program.title} <span className="text-gray-500">({program.roundType}, {program.status})</span>
-            </Link>
-            <span className="flex gap-2">
-              <button
-                className="underline"
-                onClick={() => setPublishStatus({ programId: program._id, publish: program.status !== 'published' })}
-              >
-                {program.status === 'published' ? 'Unpublish' : 'Publish'}
-              </button>
-              <button className="text-red-600 underline" onClick={() => deleteTraining(program._id)}>
-                Delete
-              </button>
-            </span>
-          </li>
-        ))}
-      </ul>
+      <Panel className="mt-6">
+        <PanelHeader
+          title="AI activity"
+          description="Every Gemini call the app has made, grouped by what it was doing."
+        />
+        {loadingUsage ? (
+          <LoadingState />
+        ) : usageData.usage.length === 0 ? (
+          <EmptyState
+            icon={TrendingUp}
+            title="No AI calls yet"
+            description="Once students complete onboarding or run mock interviews, activity shows up here."
+          />
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <Th>Operation</Th>
+                <Th>Outcome</Th>
+                <Th className="text-right">Calls</Th>
+                <Th className="text-right">Avg response</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {usageData.usage.map((row, i) => (
+                <Tr key={i}>
+                  <Td className="font-medium">
+                    {AI_OPERATION_LABEL[row.operation] ?? row.operation}
+                  </Td>
+                  <Td>
+                    <Badge tone={AI_STATUS_TONE[row.status] ?? 'neutral'}>
+                      {AI_STATUS_LABEL[row.status] ?? row.status}
+                    </Badge>
+                  </Td>
+                  <Td className="text-right tabular-nums">{row.count}</Td>
+                  <Td className="text-right tabular-nums text-muted">
+                    {row.avgLatencyMs ? `${row.avgLatencyMs} ms` : '—'}
+                  </Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Panel>
     </div>
   );
 }

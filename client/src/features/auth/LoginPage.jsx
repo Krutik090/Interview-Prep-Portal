@@ -3,6 +3,9 @@ import { useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { useLoginMutation } from './authApi.js';
 import { credentialsSet } from './authSlice.js';
+import Button from '../../components/ui/Button.jsx';
+import { Field, Input } from '../../components/ui/Field.jsx';
+import { InlineError } from '../../components/ui/Feedback.jsx';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -16,46 +19,64 @@ export default function LoginPage() {
     const result = await login({ email, password });
     if (result.error) return;
     dispatch(credentialsSet(result.data));
-    navigate(result.data.user.onboardingCompleted ? '/dashboard' : '/onboarding');
+    const { user } = result.data;
+    if (user.role === 'admin') navigate('/admin');
+    else navigate(user.onboardingCompleted ? '/dashboard' : '/onboarding');
   }
 
+  const message =
+    error?.status === 429
+      ? 'Too many login attempts. Wait a few minutes before trying again.'
+      : error
+        ? 'That email and password combination did not match an account.'
+        : null;
+
   return (
-    <div className="mx-auto flex min-h-svh max-w-sm flex-col justify-center gap-4 p-6">
-      <h1 className="text-2xl font-semibold">Log in</h1>
-      <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-        <input
-          className="rounded border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
-          type="email"
-          placeholder="Email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          className="rounded border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
-          type="password"
-          placeholder="Password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        {error && (
-          <p className="text-sm text-red-600">
-            {error.data?.message ?? 'Login failed. Please try again.'}
-          </p>
-        )}
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="rounded bg-gray-900 px-3 py-2 text-white disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900"
-        >
-          {isLoading ? 'Logging in...' : 'Log in'}
-        </button>
+    <div>
+      <h1 className="font-display text-[26px] font-semibold leading-tight">Log in</h1>
+      <p className="mt-1.5 text-sm text-muted">Pick up your preparation where you left off.</p>
+
+      <form className="mt-7 flex flex-col gap-4" onSubmit={handleSubmit}>
+        <Field label="Email">
+          {(a) => (
+            <Input
+              {...a}
+              type="email"
+              autoComplete="email"
+              placeholder="you@college.edu"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          )}
+        </Field>
+
+        <Field label="Password">
+          {(a) => (
+            <Input
+              {...a}
+              type="password"
+              autoComplete="current-password"
+              placeholder="Your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          )}
+        </Field>
+
+        <InlineError>{message}</InlineError>
+
+        <Button type="submit" size="lg" disabled={isLoading} className="mt-1 w-full">
+          {isLoading ? 'Logging in' : 'Log in'}
+        </Button>
       </form>
-      <p className="text-sm text-gray-500">
-        No account? <Link to="/register" className="underline">Register</Link>
+
+      <p className="mt-6 text-sm text-muted">
+        New here?{' '}
+        <Link to="/register" className="font-medium text-brand underline underline-offset-2">
+          Create an account
+        </Link>
       </p>
     </div>
   );
