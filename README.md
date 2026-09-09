@@ -28,9 +28,21 @@ npm install             # also downloads a bundled Chromium (~400MB) for Puppete
 cp .env.example .env   # then fill in GEMINI_API_KEY and JWT secrets
 npm run dev            # API on http://localhost:5000
 npm run worker         # background job worker (separate process)
+npm run seed            # WIPES and repopulates the DB with realistic demo data (see below)
 npm test                # Jest + Supertest
 npm run load-test       # manual autocannon smoke check against a running instance
 ```
+
+### Demo data (`npm run seed`)
+
+Populates one admin, 8 students (6 onboarded with AI profile summaries, 2 not
+— to demo the onboarding wizard), 8 training programs across all 4 round
+types (6 published, 2 draft) with all 4 module types each, 12 enrollments
+spanning passed/failed/in-progress states, 3 pending GD submissions in the
+admin review queue, 6 grooming articles, and AI-usage history for the admin
+dashboard. All accounts use password `Password123!` — the script prints the
+full list of logins when it finishes. It's destructive (wipes the relevant
+collections first) and refuses to run with `NODE_ENV=production`.
 
 ## Frontend (`client/`)
 

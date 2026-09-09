@@ -12,8 +12,9 @@
     "worker": "node src/jobs/index.js",
     "test": "cross-env NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
     "test:watch": "cross-env NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
-    "lint": "eslint src tests",
-    "load-test": "node tests/load/runSmoke.js"
+    "lint": "eslint src tests scripts",
+    "load-test": "node tests/load/runSmoke.js",
+    "seed": "node scripts/seed.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
