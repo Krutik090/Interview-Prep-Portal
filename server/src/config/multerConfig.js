@@ -1,6 +1,7 @@
 import path from 'node:path';
 import multer from 'multer';
 import { env } from './env.js';
+import { ApiError } from '../utils/ApiError.js';
 
 // Storage destinations and mimetype allowlists are configured per-upload-context
 // (avatar/gd-submission/material-asset) when those routes are built in later
@@ -25,7 +26,7 @@ export function createUploadMiddleware({ subdir, allowedMimeTypes, maxFileSizeMB
     limits: { fileSize: maxFileSizeMB * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
       if (!allowedMimeTypes.includes(file.mimetype)) {
-        cb(new Error(`Unsupported file type: ${file.mimetype}`));
+        cb(ApiError.badRequest(`Unsupported file type: ${file.mimetype}`));
         return;
       }
       cb(null, true);

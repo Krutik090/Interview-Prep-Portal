@@ -5,6 +5,7 @@ import { requireRole } from '../middlewares/rbac.js';
 import { validate } from '../middlewares/validate.js';
 import { aiRateLimiter } from '../middlewares/rateLimiters.js';
 import { createUploadMiddleware } from '../config/multerConfig.js';
+import { verifyUploadedFileType } from '../middlewares/verifyUploadedFileType.js';
 import {
   quizSubmitSchema,
   aiInterviewAnswerSchema,
@@ -12,9 +13,10 @@ import {
   gdReviewSchema,
 } from '../validators/submissionValidators.js';
 
+const GD_FILE_MIME_TYPES = ['video/mp4', 'video/webm', 'audio/mpeg', 'audio/wav'];
 const uploadGdFile = createUploadMiddleware({
   subdir: 'gd-submissions',
-  allowedMimeTypes: ['video/mp4', 'video/webm', 'audio/mpeg', 'audio/wav'],
+  allowedMimeTypes: GD_FILE_MIME_TYPES,
   maxFileSizeMB: 50,
 });
 
@@ -37,6 +39,7 @@ router.get('/gd/queue', requireRole('admin'), submissionController.listGdQueue);
 router.post(
   '/gd/:moduleId',
   uploadGdFile.single('file'),
+  verifyUploadedFileType(GD_FILE_MIME_TYPES),
   validate(gdSubmitSchema),
   submissionController.submitGd,
 );

@@ -2,11 +2,27 @@ import rateLimit from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
 import { redisClient } from '../config/redis.js';
 import { env } from '../config/env.js';
+import { logger } from '../utils/logger.js';
+
+// rate-limit-redis's RedisStore constructor eagerly (and asynchronously,
+// unawaited) loads a Lua script over the connection — if Redis isn't
+// reachable yet, that fires an unhandled rejection at *module load time*
+// and crashes the whole process before the server even starts. Probing
+// connectivity first (once, at startup) and falling back to the in-memory
+// store when Redis is unavailable keeps every rate limiter's own behavior
+// consistent with the rest of the app: a Redis outage is never fatal.
+const redisAvailable = env.isTest
+  ? false
+  : await redisClient
+      .connect()
+      .then(() => true)
+      .catch((err) => {
+        logger.warn({ err }, 'Redis unavailable at startup — rate limiters will use in-memory storage');
+        return false;
+      });
 
 function redisStore(prefix) {
-  // In test mode, fall back to the in-memory store so tests don't require a
-  // running Redis instance.
-  if (env.isTest) return undefined;
+  if (!redisAvailable) return undefined;
   return new RedisStore({
     prefix,
     sendCommand: (...args) => redisClient.call(...args),

@@ -29,6 +29,7 @@ cp .env.example .env   # then fill in GEMINI_API_KEY and JWT secrets
 npm run dev            # API on http://localhost:5000
 npm run worker         # background job worker (separate process)
 npm test                # Jest + Supertest
+npm run load-test       # manual autocannon smoke check against a running instance
 ```
 
 ## Frontend (`client/`)
