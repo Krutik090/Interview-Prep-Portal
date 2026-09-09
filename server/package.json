@@ -33,6 +33,7 @@
     "multer": "^2.3.0",
     "pino": "^9.4.0",
     "pino-http": "^10.3.0",
+    "puppeteer": "^25.10.0",
     "rate-limit-redis": "^4.2.0",
     "sanitize-html": "^2.13.0",
     "zod": "^3.23.8"

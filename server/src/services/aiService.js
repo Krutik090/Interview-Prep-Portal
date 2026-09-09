@@ -25,6 +25,10 @@ import {
   PROMPT_VERSION as PERFORMANCE_TIPS_VERSION,
   buildPerformanceTipsPrompt,
 } from '../prompts/performanceTips/v1.js';
+import {
+  PROMPT_VERSION as RESUME_POLISH_VERSION,
+  buildResumePolishPrompt,
+} from '../prompts/resumePolish/v1.js';
 
 const profileSummaryResponseSchema = z.object({
   summary: z.string().min(1),
@@ -290,6 +294,48 @@ export async function generatePerformanceTips({ userId, moduleType, roundType, s
       scorePct >= 70
         ? 'Solid attempt — keep practicing consistently to stay sharp for the real interview.'
         : 'Review this topic again and try a fresh attempt — focus on the areas you found hardest.',
+  });
+}
+
+const resumePolishResponseSchema = z.object({
+  summary: z.string().min(1),
+  skillsSection: z.array(z.string()).default([]),
+  projectsSection: z.array(z.string()).default([]),
+  achievementsSection: z.array(z.string()).default([]),
+});
+
+function ruleBasedResumeContent({ profileSnapshot, completedPrograms }) {
+  return {
+    summary: `${profileSnapshot.experienceLevel === 'fresher' ? 'Motivated fresher' : `Candidate with ${profileSnapshot.experienceLevel} experience`} targeting ${profileSnapshot.targetRole || 'a role'}, having completed ${completedPrograms.length} interview-prep training program(s).`,
+    skillsSection: profileSnapshot.currentSkills ?? [],
+    projectsSection: [],
+    achievementsSection: completedPrograms.map(
+      (p) => `Completed "${p.title}" (${p.roundType} round) with a score of ${p.scorePct}%.`,
+    ),
+  };
+}
+
+/**
+ * Polishes resume content from a student's profile + completed training
+ * highlights. Falls back to a deterministic rule-based bullet formatter
+ * (never fails outright) so resume generation is never blocked by a
+ * Gemini outage.
+ */
+export async function polishResumeContent({ userId, profileSnapshot, completedPrograms }) {
+  return withLogging({
+    userId,
+    operation: 'resume_polish',
+    promptVersion: RESUME_POLISH_VERSION,
+    fn: async () => {
+      const prompt = buildResumePolishPrompt({ profileSnapshot, completedPrograms });
+      const raw = await generateContent(prompt);
+      const parsed = resumePolishResponseSchema.safeParse(JSON.parse(extractJson(raw)));
+      if (!parsed.success) {
+        throw new Error(`Malformed Gemini response: ${parsed.error.message}`);
+      }
+      return parsed.data;
+    },
+    fallback: () => ruleBasedResumeContent({ profileSnapshot, completedPrograms }),
   });
 }
 

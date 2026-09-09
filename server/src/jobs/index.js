@@ -7,13 +7,15 @@ import { connectDb } from '../config/db.js';
 import { startProfileSummarizeWorker } from './workers/profileSummarizeWorker.js';
 import { startInterviewWorker } from './workers/interviewWorker.js';
 import { startPerformanceTipsWorker } from './workers/performanceTipsWorker.js';
+import { startResumeWorker } from './workers/resumeWorker.js';
 
 async function main() {
   await connectDb();
   startProfileSummarizeWorker();
   startInterviewWorker();
   startPerformanceTipsWorker();
-  logger.info('Worker process started: ai-profile, ai-interview, ai-tips');
+  startResumeWorker();
+  logger.info('Worker process started: ai-profile, ai-interview, ai-tips, ai-resume');
 }
 
 main().catch((err) => {

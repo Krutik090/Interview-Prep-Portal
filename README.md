@@ -24,7 +24,7 @@ build roadmap.
 
 ```
 cd server
-npm install
+npm install             # also downloads a bundled Chromium (~400MB) for Puppeteer/resume PDFs
 cp .env.example .env   # then fill in GEMINI_API_KEY and JWT secrets
 npm run dev            # API on http://localhost:5000
 npm run worker         # background job worker (separate process)

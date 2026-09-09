@@ -14,6 +14,7 @@ import ProgramManagePage from '../features/admin/ProgramManagePage.jsx';
 import GdReviewQueuePage from '../features/admin/GdReviewQueuePage.jsx';
 import AdminGroomingPage from '../features/grooming/AdminGroomingPage.jsx';
 import AdminStatsPage from '../features/admin/AdminStatsPage.jsx';
+import ResumePage from '../features/resume/ResumePage.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import RequireOnboarding from './RequireOnboarding.jsx';
 import RoleRoute from './RoleRoute.jsx';
@@ -44,6 +45,7 @@ export default function AppRoutes() {
             <Route path="/trainings/:programId" element={<TrainingDetailPage />} />
             <Route path="/grooming" element={<GroomingListPage />} />
             <Route path="/grooming/:id" element={<GroomingDetailPage />} />
+            <Route path="/resume" element={<ResumePage />} />
           </Route>
         </Route>
       </Route>

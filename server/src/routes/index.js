@@ -8,6 +8,7 @@ import enrollmentRoutes from './enrollmentRoutes.js';
 import submissionRoutes from './submissionRoutes.js';
 import groomingRoutes from './groomingRoutes.js';
 import adminRoutes from './adminRoutes.js';
+import resumeRoutes from './resumeRoutes.js';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/enrollments', enrollmentRoutes);
 router.use('/submissions', submissionRoutes);
 router.use('/grooming', groomingRoutes);
 router.use('/admin', adminRoutes);
+router.use('/resume', resumeRoutes);
 
 export default router;
