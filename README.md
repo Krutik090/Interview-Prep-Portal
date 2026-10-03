@@ -29,6 +29,7 @@ cp .env.example .env   # then fill in GEMINI_API_KEY and JWT secrets
 npm run dev            # API on http://localhost:5000
 npm run worker         # background job worker (separate process)
 npm run seed            # WIPES and repopulates the DB with realistic demo data (see below)
+npm run seed:admin      # creates one admin account, deletes nothing
 npm test                # Jest + Supertest
 npm run load-test       # manual autocannon smoke check against a running instance
 ```
@@ -43,6 +44,29 @@ admin review queue, 6 grooming articles, and AI-usage history for the admin
 dashboard. All accounts use password `Password123!` — the script prints the
 full list of logins when it finishes. It's destructive (wipes the relevant
 collections first) and refuses to run with `NODE_ENV=production`.
+
+### Admin account only (`npm run seed:admin`)
+
+Creates a single admin and touches nothing else, so it's safe on a real
+database (including production). Credentials come from environment
+variables so the password never lands in shell history:
+
+```bash
+ADMIN_EMAIL=placement.cell@college.edu ADMIN_PASSWORD='a long passphrase' npm run seed:admin
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:ADMIN_EMAIL='placement.cell@college.edu'; $env:ADMIN_PASSWORD='a long passphrase'; npm run seed:admin
+Remove-Item Env:ADMIN_PASSWORD
+```
+
+The password must be at least 12 characters and not an obvious one.
+Running it again for an existing admin changes nothing unless you pass
+`--reset-password` (sets the new password and signs out all of that
+account's sessions). If the email belongs to a student, it refuses unless
+you pass `--promote`.
 
 ## Frontend (`client/`)
 
