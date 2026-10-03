@@ -29,6 +29,11 @@ import {
   PROMPT_VERSION as RESUME_POLISH_VERSION,
   buildResumePolishPrompt,
 } from '../prompts/resumePolish/v1.js';
+import {
+  PROMPT_VERSION as RESUME_PARSE_VERSION,
+  buildResumeParsePrompt,
+} from '../prompts/resumeParse/v1.js';
+import { extractProfileFromResumeText } from '../utils/resumeHeuristics.js';
 
 const profileSummaryResponseSchema = z.object({
   summary: z.string().min(1),
@@ -336,6 +341,49 @@ export async function polishResumeContent({ userId, profileSnapshot, completedPr
       return parsed.data;
     },
     fallback: () => ruleBasedResumeContent({ profileSnapshot, completedPrograms }),
+  });
+}
+
+// Deliberately lenient: every field optional, so a resume that only reveals
+// some details still yields a useful partial prefill. Length/shape limits
+// are enforced afterwards (onboardingService) for both AI and rule-based output.
+const resumeParseResponseSchema = z.object({
+  fullName: z.string().optional(),
+  education: z
+    .object({
+      degree: z.string().optional(),
+      institution: z.string().optional(),
+      branch: z.string().optional(),
+      graduationYear: z.coerce.number().optional(),
+    })
+    .optional(),
+  targetRole: z.string().optional(),
+  targetDomain: z.string().optional(),
+  experienceLevel: z.enum(['fresher', '0-1yr', '1-3yr', '3+yr']).optional().catch(undefined),
+  currentSkills: z.array(z.string()).optional(),
+  strengths: z.array(z.string()).optional(),
+  preferredCompanies: z.array(z.string()).optional(),
+});
+
+/**
+ * Turns resume text into onboarding prefill. Falls back to rule-based
+ * extraction (never throws) — the student reviews every field either way,
+ * so a partial result is still useful.
+ */
+export async function parseResumeToProfile({ userId, resumeText }) {
+  return withLogging({
+    userId,
+    operation: 'resume_parse',
+    promptVersion: RESUME_PARSE_VERSION,
+    fn: async () => {
+      const raw = await generateContent(buildResumeParsePrompt(resumeText));
+      const parsed = resumeParseResponseSchema.safeParse(JSON.parse(extractJson(raw)));
+      if (!parsed.success) {
+        throw new Error(`Malformed Gemini response: ${parsed.error.message}`);
+      }
+      return { prefill: parsed.data, source: 'ai' };
+    },
+    fallback: () => ({ prefill: extractProfileFromResumeText(resumeText), source: 'rule-based' }),
   });
 }
 

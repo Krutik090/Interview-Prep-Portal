@@ -38,30 +38,35 @@
   --font-sans: 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
 }
 
-:root {
-  color-scheme: light;
-}
+/* Base styles must live in the base layer: unlayered CSS outranks every
+   Tailwind layer, so an unlayered `h2 { color }` silently overrides a
+   `text-white` utility on a heading (it did, on the navy auth panel). */
+@layer base {
+  :root {
+    color-scheme: light;
+  }
 
-html {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-body {
-  margin: 0;
-  min-height: 100svh;
-  background-color: var(--color-paper);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-}
+  body {
+    margin: 0;
+    min-height: 100svh;
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
 
-h1,
-h2,
-h3,
-h4 {
-  font-family: var(--font-display);
-  letter-spacing: -0.018em;
-  color: var(--color-ink);
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.018em;
+    color: var(--color-ink);
+  }
 }
 
 /* Visible keyboard focus everywhere, without the default double-ring on

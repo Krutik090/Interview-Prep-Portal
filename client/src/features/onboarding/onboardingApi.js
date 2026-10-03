@@ -9,6 +9,9 @@ export const onboardingApi = apiSlice.injectEndpoints({
       query: (answers) => ({ url: '/onboarding/submit', method: 'post', data: answers }),
       invalidatesTags: ['Profile', 'Onboarding'],
     }),
+    parseResume: builder.mutation({
+      query: (formData) => ({ url: '/onboarding/parse-resume', method: 'post', data: formData }),
+    }),
     getOnboardingStatus: builder.query({
       query: () => ({ url: '/onboarding/status' }),
       providesTags: ['Onboarding'],
@@ -19,5 +22,6 @@ export const onboardingApi = apiSlice.injectEndpoints({
 export const {
   useGetQuestionnaireQuery,
   useSubmitOnboardingMutation,
+  useParseResumeMutation,
   useGetOnboardingStatusQuery,
 } = onboardingApi;

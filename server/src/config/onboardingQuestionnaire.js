@@ -6,8 +6,9 @@ export const ONBOARDING_QUESTIONNAIRE = {
   sections: [
     {
       key: 'education',
-      title: 'Education',
+      title: 'About you',
       fields: [
+        { name: 'fullName', label: 'Full name', type: 'text', required: true },
         { name: 'education.degree', label: 'Degree', type: 'text', required: true },
         { name: 'education.institution', label: 'Institution', type: 'text', required: true },
         { name: 'education.graduationYear', label: 'Graduation year', type: 'number', required: true },

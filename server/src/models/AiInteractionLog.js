@@ -11,6 +11,7 @@ const aiInteractionLogSchema = new Schema({
       'interview_evaluate',
       'content_draft',
       'gd_review_assist',
+      'resume_parse',
       'resume_polish',
       'performance_tips',
       'grooming_personalize',

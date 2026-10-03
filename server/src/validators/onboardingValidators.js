@@ -4,6 +4,7 @@ const tagArray = z.array(z.string().trim().min(1).max(60)).max(30).default([]);
 
 export const onboardingSubmitSchema = z
   .object({
+    fullName: z.string().trim().min(1).max(120).optional(),
     education: z
       .object({
         degree: z.string().trim().min(1).max(120),
